@@ -1,0 +1,1 @@
+Payment Failed<?php /**PATH /home/ubnzxmjc/localguide/resources/views/payment_failed.blade.php ENDPATH**/ ?>

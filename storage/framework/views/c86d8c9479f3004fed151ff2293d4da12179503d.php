@@ -1,0 +1,1 @@
+Payment Success<?php /**PATH /home/ubnzxmjc/localguide/resources/views/payment_success.blade.php ENDPATH**/ ?>
