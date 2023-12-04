@@ -35,7 +35,6 @@ use App\Models\Subscriber;
 use App\Models\Banner;
 use App\Models\About;
 use App\Models\Privecy;
-use Twilio\Rest\Client;
 use Hash;
 use Mail;
 use DateTime;
@@ -582,244 +581,78 @@ class ApiController extends Controller
         return $data;
     }
 
-
-
-
-    // public function doctorregister(Request $request)
-    // {
-    //     $response = array("success" => "0", "register" => "Validation error");
-    //     $rules = [
-    //         'phone' => 'required',
-    //         'password' => 'required',
-    //         'email' => 'required',
-    //         'name' => 'required',
-    //         // 'token' =>'required'
-    //     ];
-
-    //     $messages = array(
-    //         'phone.required' => "Mobile No is required",
-    //         'password.required' => "password is required",
-    //         //   'token.required' => "token is required",
-    //         'email.required' => 'Email is required',
-    //         'name.required' => 'name is required'
-    //     );
-
-    //     $validator = Validator::make($request->all(), $rules, $messages);
-
-    //     if ($validator->fails()) {
-    //         $message = '';
-    //         $messages_l = json_decode(json_encode($validator->messages()), true);
-    //         foreach ($messages_l as $msg) {
-    //             $message .= $msg[0] . ", ";
-    //         }
-    //         $response['register'] = $message;
-    //     } else {
-    //         $getuser = Doctors::where("email", $request->get("email"))->first();
-    //         if (empty($getuser)) { //update token
-
-    //             $otp = rand(100000, 999999);
-    //             $otpSent = $this->sendOTP($request->get("phone"), $otp);
-    //             $login_field = "";
-    //             $user_id = "";
-    //             $connectycube_password = "";
-
-
-
-    //             if (!$otpSent) {
-    //                 // Handle the case where OTP sending fails
-    //                 $response['success'] = "0";
-    //                 $response['register'] = "Failed to send OTP";
-    //                 return json_encode($response, JSON_NUMERIC_CHECK);
-    //             }
-
-    //             if (env('ConnectyCube') == true) {
-
-    //                 $login_field = $request->get("phone") . rand() . "#2";
-    //                 $user_id = $this->signupconnectycude($request->get("name"), $request->get("password"), $request->get("email"), $request->get("phone"), $login_field);
-    //                 $connectycube_password = $request->get("password");
-    //             }
-
-    //             $inset = new Doctors();
-    //             $inset->phoneno = $request->get("phone");
-    //             $inset->name = $request->get("name");
-    //             $inset->password = $request->get("password");
-    //             $inset->email = $request->get("email");
-
-
-    //             if (env('ConnectyCube') == true) {
-
-    //                 $login_field = $request->get("phone") . rand() . "#2";
-    //                 $user_id = $this->signupconnectycude($request->get("name"), $request->get("password"), $request->get("email"), $request->get("phone"), $login_field);
-    //                 $connectycube_password = $request->get("password");
-    //             }
-
-    //             $inset->connectycube_user_id = $user_id;
-    //             $inset->login_id = $login_field;
-    //             $inset->connectycube_password = $connectycube_password;
-
-    //             if ($user_id == "0-email must be unique") {
-    //                 $response['success'] = "0";
-    //                 $response['register'] = "Email Or Mobile Number Already Register in ConnectCube";
-
-    //             } else {
-    //                 $inset->save();
-    //                 $store = TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
-    //                 $response['success'] = "1";
-    //                 $response['register'] = array("user_id" => $inset->id, "name" => $inset->name, "phone" => $inset->phoneno, "email" => $inset->email, "connectycube_user_id" => $inset->connectycube_user_id, "login_id" => $inset->login_id, "connectycube_password" => $inset->connectycube_password, "profile_pic" => "");
-    //             }
-
-    //         } else {
-    //             $response['success'] = "0";
-    //             $response['register'] = "Email Already Register";
-    //         }
-    //         $response['otp_sent'] = true;
-    //     }
-    //     // $response['otp_sent'] = true;
-    //     return json_encode($response, JSON_NUMERIC_CHECK);
-    // }
-
     public function doctorregister(Request $request)
     {
-        $response = ["success" => "0", "register" => "Validation error"];
+        $response = array("success" => "0", "register" => "Validation error");
         $rules = [
             'phone' => 'required',
             'password' => 'required',
             'email' => 'required',
             'name' => 'required',
+            // 'token' =>'required'
         ];
 
-        $messages = [
-            'phone.required' => "Mobile Number is required",
-            'password.required' => "Password is required",
+        $messages = array(
+            'phone.required' => "Mobile No is required",
+            'password.required' => "password is required",
+            //   'token.required' => "token is required",
             'email.required' => 'Email is required',
-            'name.required' => 'Name is required'
-        ];
+            'name.required' => 'name is required'
+        );
 
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            $response['register'] = $validator->errors()->first();
+            $message = '';
+            $messages_l = json_decode(json_encode($validator->messages()), true);
+            foreach ($messages_l as $msg) {
+                $message .= $msg[0] . ", ";
+            }
+            $response['register'] = $message;
         } else {
             $getuser = Doctors::where("email", $request->get("email"))->first();
+            if (empty($getuser)) { //update token
+                $login_field = "";
+                $user_id = "";
+                $connectycube_password = "";
 
-            if (empty($getuser)) {
-                // Generate OTP
-                $otp = rand(100000, 999999);
-                $type = $this->sendOTP($request->get("phone"), $otp);
+                $inset = new Doctors();
+                $inset->phoneno = $request->get("phone");
+                $inset->name = $request->get("name");
+                $inset->password = $request->get("password");
+                $inset->email = $request->get("email");
 
-                $response['messagess'] = $type;
-                // Send OTP via Twilio
-                if (false) {
-                    // Continue with your existing code
+
+                if (env('ConnectyCube') == true) {
+
                     $login_field = $request->get("phone") . rand() . "#2";
                     $user_id = $this->signupconnectycude($request->get("name"), $request->get("password"), $request->get("email"), $request->get("phone"), $login_field);
                     $connectycube_password = $request->get("password");
-
-                    $inset = new Doctors();
-                    $inset->phoneno = $request->get("phone");
-                    $inset->name = $request->get("name");
-                    $inset->password = $request->get("password");
-                    $inset->email = $request->get("email");
-                    $inset->connectycube_user_id = $user_id;
-                    $inset->login_id = $login_field;
-                    $inset->connectycube_password = $connectycube_password;
-
-                    if ($user_id === "0-email must be unique") {
-                        $response['success'] = "0";
-                        $response['register'] = "Email Or Mobile Number Already Register in ConnectCube";
-                    } else {
-                        $inset->save();
-                        TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
-                        $response['success'] = "1";
-                        $response['register'] = [
-                            "user_id" => $inset->id,
-                            "name" => $inset->name,
-                            "phone" => $inset->phoneno,
-                            "email" => $inset->email,
-                            "connectycube_user_id" => $inset->connectycube_user_id,
-                            "login_id" => $inset->login_id,
-                            "connectycube_password" => $inset->connectycube_password,
-                            "profile_pic" => ""
-                        ];
-                    }
-                } else {
-                    $response['success'] = "0";
-                    $response['register'] = "Failed to send OTP";
-
                 }
-                $response['message'] = $otp;
-                return json_encode($response, JSON_NUMERIC_CHECK);
+
+                $inset->connectycube_user_id = $user_id;
+                $inset->login_id = $login_field;
+                $inset->connectycube_password = $connectycube_password;
+
+                if ($user_id == "0-email must be unique") {
+                    $response['success'] = "0";
+                    $response['register'] = "Email Or Mobile Number Already Register in ConnectCube";
+
+                } else {
+                    $inset->save();
+                    $store = TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
+                    $response['success'] = "1";
+                    $response['register'] = array("user_id" => $inset->id, "name" => $inset->name, "phone" => $inset->phoneno, "email" => $inset->email, "connectycube_user_id" => $inset->connectycube_user_id, "login_id" => $inset->login_id, "connectycube_password" => $inset->connectycube_password, "profile_pic" => "");
+                }
+
             } else {
                 $response['success'] = "0";
                 $response['register'] = "Email Already Register";
             }
 
-            $response['otp_sent'] = true;
         }
-
         return json_encode($response, JSON_NUMERIC_CHECK);
-    }
 
-
-    private function sendOTP($phoneNumber, $otp)
-    {
-        // Your Twilio Account SID, Auth Token, and Twilio Phone Number
-        // $accountSid = env('TWILIO_SID');
-        // $authToken = env('TWILIO_AUTH_TOKEN');
-        // $twilioNumber = env('TWILIO_PHONE_NUMBER');
-        $accountSid = 'AC7af43cfcc080d32458cd210c2c72e4ae';
-        $authToken = 'fae25f7b05ac638fd65da896c63384bc';
-        $twilioNumber = "+16502784547";
-
-        // Initialize Twilio client
-        // $twilio = new Client($accountSid, $authToken);
-        try {
-            $twilio = new Client($accountSid, $authToken);
-            // Twilio Client successfully created
-            // You can use $twilio for further Twilio operations
-
-            // return $response['message'] = "Twilio Client successfully created.";
-        } catch (\Twilio\Exceptions\ConfigurationException $e) {
-            // Handle Twilio configuration exception
-            // Log or return the exception message
-            $response['error'] = "Twilio Configuration Exception: " . $e->getMessage();
-            echo json_encode($response);
-        } catch (\Exception $e) {
-            // Handle other exceptions
-            // Log or return the exception message
-            $response['error'] = "Exception: " . $e->getMessage();
-            echo json_encode($response);
-        }
-        // $twilio->
-
-        try {
-            // Send SMS using Twilio
-            $message = $twilio->messages
-                ->create(
-                    ('+88' + $phoneNumber), // To phone number
-                    [
-                        'from' => $twilioNumber,
-                        'body' => 'Your OTP is: ' . $otp,
-                    ]
-                );
-
-            // You can handle the response if needed
-            $messageSid = $message->sid;
-
-
-
-            // For example purposes, let's store OTP in session
-            session(['otp' => $otp]);
-            return ["success1" => 1, "register1" => "OTP sent successfully", "message2" => $messageSid];
-
-            // If the SMS is sent successfully, you can return a success response
-            // return true;
-        } catch (\Exception $e) {
-            // Handle exceptions (e.g., if SMS sending fails)
-            // Log or return an error response
-            // return false;
-            return ["success1" => 0, "register1" => "Failed to send OTP", "error1" => $e->getMessage()];
-        }
     }
 
     public function doctorlogin(Request $request)
@@ -1990,12 +1823,11 @@ class ApiController extends Controller
                     if ($request->file('image')) {
 
                         $file = $request->file('image');
-                        // $filename = $file->getClientOriginalName();
+                        $filename = $file->getClientOriginalName();
                         $extension = $file->getClientOriginalExtension() ?: 'png';
-                        // $folderName = '/upload/doctors/';
-                        $picture = rand() . '.' . $extension;
-                        // $destinationPath = public_path() . $folderName;
-                        $destinationPath = public_path('/upload/doctors');
+                        $folderName = '/upload/doctors/';
+                        $picture = time() . '.' . $extension;
+                        $destinationPath = public_path() . $folderName;
                         $request->file('image')->move($destinationPath, $picture);
                         $img_url = $picture;
                         $image_path = public_path() . "/upload/doctors/" . $rel_url;

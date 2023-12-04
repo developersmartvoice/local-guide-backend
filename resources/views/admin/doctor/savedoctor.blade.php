@@ -124,6 +124,42 @@
                                     class="form-control" id="consultation_fees" min="1" step="0.01">
                               </div>
                            </div>
+                           <div class="col-lg-3">
+                              <div class="form-group">
+                                 <label for="aboutus">{{__("City")}}<span class="reqfield">*</span></label>
+                                 <input type="text" required name="city" value="{{isset($data->city)?$data->city:''}}"
+                                    class="form-control">
+                              </div>
+                           </div>
+                           <div class="col-lg-3">
+                              <div class="form-group">
+                                 <label>{{__("Gender")}}<span class="reqfield">*</span></label>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderNone"
+                                       value="none" {{ isset($data->gender) && $data->gender == 'none' ? 'checked' : ''
+                                    }}>
+                                    <label class="form-check-label" for="genderNone">
+                                       None
+                                    </label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderMale"
+                                       value="male" {{ isset($data->gender) && $data->gender == 'male' ? 'checked' : ''
+                                    }}>
+                                    <label class="form-check-label" for="genderMale">
+                                       Male
+                                    </label>
+                                 </div>
+                                 <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="gender" id="genderFemale"
+                                       value="female" {{ isset($data->gender) && $data->gender == 'female' ? 'checked' :
+                                    '' }}>
+                                    <label class="form-check-label" for="genderFemale">
+                                       Female
+                                    </label>
+                                 </div>
+                              </div>
+                           </div>
                         </div>
                         <div class="row">
                            <div class="col-lg-6">

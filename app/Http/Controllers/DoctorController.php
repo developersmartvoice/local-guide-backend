@@ -230,6 +230,8 @@ class DoctorController extends Controller
         $store->facebook_url = $request->get("facebook_url");
         $store->twitter_url = $request->get("twitter_url");
         $store->consultation_fees = $request->get("consultation_fees");
+        $store->gender = $request->get("gender");
+        $store->city = $request->get("city");
         $store->email = $request->get("email");
         $store->working_time = $request->get("working_time");
         $store->image = $img_url;
