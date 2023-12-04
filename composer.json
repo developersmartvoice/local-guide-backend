@@ -26,7 +26,8 @@
         "stephenjude/paystack-lite": "^4.0",
         "stevebauman/location": "^5.2",
         "stripe/stripe-php": "^7.93",
-        "yajra/laravel-datatables-oracle": "~9.0"
+        "yajra/laravel-datatables-oracle": "~9.0",
+        "twilio/sdk": "^6.0"
     },
     "require-dev": {
         "facade/ignition": "^2.3.6",
