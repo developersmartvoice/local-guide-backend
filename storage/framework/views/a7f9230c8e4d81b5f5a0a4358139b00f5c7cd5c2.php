@@ -172,23 +172,159 @@
                               </div>
                            </div>
                            <div class="col-lg-6">
-                              <div class="form-group">
+                              <!-- <div class="form-group">
                                  <label for="services"><?php echo e(__("message.Services")); ?><span class="reqfield">*</span></label>
                                  <textarea id="services" class="form-control" rows="5"
                                     placeholder='<?php echo e(__("message.Enter Description about Services")); ?>' name="services"
                                     required=""><?php echo e(isset($data->services)?$data->services:''); ?></textarea>
+                              </div> -->
+                              <div class="form-group">
+                                 <label><?php echo e(__("message.Services")); ?><span class="reqfield">*</span></label>
+                                 <div>
+                                    <!-- Add options dynamically from your database or use a predefined list -->
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="translation"
+                                          name="services[]" value="translation" <?php echo e(isset($data->services) &&
+                                       in_array('translation',
+                                       explode(',', $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="translation">Translation &
+                                          Interpretation</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="shopping" name="services[]"
+                                          value="shopping" <?php echo e(isset($data->services) && in_array('shopping',
+                                       explode(',', $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="shopping">Shopping</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="food" name="services[]"
+                                          value="food" <?php echo e(isset($data->services) && in_array('food', explode(',',
+                                       $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="food">Food & Restaurants</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="art" name="services[]"
+                                          value="art" <?php echo e(isset($data->services) && in_array('art',
+                                       explode(',', $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="art">Art & Museums</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="history" name="services[]"
+                                          value="history" <?php echo e(isset($data->services) && in_array('history', explode(',',
+                                       $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="history">History & Culture</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="exploration"
+                                          name="services[]" value="exploration" <?php echo e(isset($data->services)
+                                       && in_array('exploration', explode(',', $data->services)) ?
+                                       'checked' : ''); ?>>
+                                       <label class="form-check-label" for="exploration">Exploration &
+                                          Sightseeing</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="tours" name="services[]"
+                                          value="pick" <?php echo e(isset($data->services) && in_array('pick', explode(',',
+                                       $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="tours">Pick up & Driving Tours</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="nightlife" name="services[]"
+                                          value="nightlife" <?php echo e(isset($data->services) && in_array('nightlife',
+                                       explode(',', $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="nightlife">Nightlife & Bars</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="sports" name="services[]"
+                                          value="sports" <?php echo e(isset($data->services) && in_array('sports', explode(',',
+                                       $data->services)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="sports">Sports & Recreation</label>
+                                    </div>
+                                    <!-- Add more services as needed -->
+                                 </div>
                               </div>
+
                            </div>
                         </div>
                         <div class="row">
                            <div class="col-lg-6">
-                              <div class="form-group">
-                                 <label for="healthcare"><?php echo e(__("message.Health Care")); ?><span
+                              <!-- <div class="form-group">
+                                 <label for="languages"><?php echo e(__("message.Languages")); ?><span
                                        class="reqfield">*</span></label>
-                                 <textarea id="healthcare" class="form-control" name="healthcare"
-                                    placeholder='<?php echo e(__("message.Enter Health Care")); ?>' rows="5"
-                                    required=""><?php echo e(isset($data->healthcare)?$data->healthcare:''); ?></textarea>
+                                 <select id="languages" class="form-control" name="languages[]" multiple required="">
+                                    Add options dynamically from your database or use a predefined list
+                                    <option value="english" <?php echo e(isset($data->languages) && in_array('english',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>English</option>
+                                    <option value="bengali" <?php echo e(isset($data->languages) && in_array('bengali',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>Bengali</option>
+                                    <option value="hindi" <?php echo e(isset($data->languages) && in_array('hindi',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>Hindi</option>
+                                    <option value="urdu" <?php echo e(isset($data->languages) && in_array('urdu',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>Urdu</option>
+                                    <option value="french" <?php echo e(isset($data->languages) && in_array('french',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>French</option>
+                                    <option value="spanish" <?php echo e(isset($data->languages) && in_array('spanish',
+                                       explode(',', $data->languages)) ? 'selected' : ''); ?>>Spanish</option>
+                                    Add more languages as needed
+                                 </select>
+                              </div> -->
+                              <div class="form-group">
+                                 <label><?php echo e(__("message.Languages")); ?><span class="reqfield">*</span></label>
+                                 <div>
+                                    <!-- Add options dynamically from your database or use a predefined list -->
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="english" name="languages[]"
+                                          value="english" <?php echo e(isset($data->languages) && in_array('english', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="english">English</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="bengali" name="languages[]"
+                                          value="bengali" <?php echo e(isset($data->languages) && in_array('bengali', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="bengali">Bengali</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="hindi" name="languages[]"
+                                          value="hindi" <?php echo e(isset($data->languages) && in_array('hindi', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="hindi">Hindi</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="urdu" name="languages[]"
+                                          value="urdu" <?php echo e(isset($data->languages) && in_array('urdu', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="urdu">Urdu</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="french" name="languages[]"
+                                          value="french" <?php echo e(isset($data->languages) && in_array('french', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="french">French</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="spanish" name="languages[]"
+                                          value="spanish" <?php echo e(isset($data->languages) && in_array('spanish', explode(',',
+                                       $data->languages)) ? 'checked' : ''); ?>>
+                                       <label class="form-check-label" for="spanish">Spanish</label>
+                                    </div>
+                                    <!-- Add more languages as needed -->
+                                 </div>
                               </div>
+
                            </div>
                            <div class="col-lg-6">
                               <div class="form-group">

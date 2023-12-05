@@ -256,6 +256,7 @@ $(document).ready(function () {
 });
 
 
+
 $(document).ready(function() {
             $('#upload_image').on('change', function(e) {
                     readURL(this,"basic_img");
@@ -273,20 +274,24 @@ $(document).ready(function() {
         }
     }
 
-    $('#us2').locationpicker({
-    location: {
-        latitude: $("#us2-lat").val(),
-        longitude: $("#us2-lon").val()
-    },
-    radius: 300,
-    inputBinding: {
-        latitudeInput: $('#us2-lat'),
-        longitudeInput: $('#us2-lon'),
-        radiusInput: $('#us2-radius'),
-        locationNameInput: $('#us2-address')
-    },
-    enableAutocomplete: true
-});
+
+    $(document).ready(function(){
+        $('#us2').locationpicker({
+            location: {
+                latitude: $("#us2-lat").val(),
+                longitude: $("#us2-lon").val()
+            },
+            radius: 100,
+            inputBinding: {
+                latitudeInput: $('#us2-lat'),
+                longitudeInput: $('#us2-lon'),
+                radiusInput: $('#us2-radius'),
+                locationNameInput: $('#us2-address')
+            },
+            enableAutocomplete: true
+        });
+    })
+    
 
 $(document).ready(function () {
     $('#reviewtable').DataTable({

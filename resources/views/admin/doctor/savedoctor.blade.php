@@ -171,23 +171,159 @@
                               </div>
                            </div>
                            <div class="col-lg-6">
-                              <div class="form-group">
+                              <!-- <div class="form-group">
                                  <label for="services">{{__("message.Services")}}<span class="reqfield">*</span></label>
                                  <textarea id="services" class="form-control" rows="5"
                                     placeholder='{{__("message.Enter Description about Services")}}' name="services"
                                     required="">{{isset($data->services)?$data->services:''}}</textarea>
+                              </div> -->
+                              <div class="form-group">
+                                 <label>{{ __("message.Services") }}<span class="reqfield">*</span></label>
+                                 <div>
+                                    <!-- Add options dynamically from your database or use a predefined list -->
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="translation"
+                                          name="services[]" value="translation" {{ isset($data->services) &&
+                                       in_array('translation',
+                                       explode(',', $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="translation">Translation &
+                                          Interpretation</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="shopping" name="services[]"
+                                          value="shopping" {{ isset($data->services) && in_array('shopping',
+                                       explode(',', $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="shopping">Shopping</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="food" name="services[]"
+                                          value="food" {{ isset($data->services) && in_array('food', explode(',',
+                                       $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="food">Food & Restaurants</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="art" name="services[]"
+                                          value="art" {{ isset($data->services) && in_array('art',
+                                       explode(',', $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="art">Art & Museums</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="history" name="services[]"
+                                          value="history" {{ isset($data->services) && in_array('history', explode(',',
+                                       $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="history">History & Culture</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="exploration"
+                                          name="services[]" value="exploration" {{ isset($data->services)
+                                       && in_array('exploration', explode(',', $data->services)) ?
+                                       'checked' : '' }}>
+                                       <label class="form-check-label" for="exploration">Exploration &
+                                          Sightseeing</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="tours" name="services[]"
+                                          value="pick" {{ isset($data->services) && in_array('pick', explode(',',
+                                       $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="tours">Pick up & Driving Tours</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="nightlife" name="services[]"
+                                          value="nightlife" {{ isset($data->services) && in_array('nightlife',
+                                       explode(',', $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="nightlife">Nightlife & Bars</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="sports" name="services[]"
+                                          value="sports" {{ isset($data->services) && in_array('sports', explode(',',
+                                       $data->services)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="sports">Sports & Recreation</label>
+                                    </div>
+                                    <!-- Add more services as needed -->
+                                 </div>
                               </div>
+
                            </div>
                         </div>
                         <div class="row">
                            <div class="col-lg-6">
-                              <div class="form-group">
-                                 <label for="healthcare">{{__("message.Health Care")}}<span
+                              <!-- <div class="form-group">
+                                 <label for="languages">{{__("message.Languages")}}<span
                                        class="reqfield">*</span></label>
-                                 <textarea id="healthcare" class="form-control" name="healthcare"
-                                    placeholder='{{__("message.Enter Health Care")}}' rows="5"
-                                    required="">{{isset($data->healthcare)?$data->healthcare:''}}</textarea>
+                                 <select id="languages" class="form-control" name="languages[]" multiple required="">
+                                    Add options dynamically from your database or use a predefined list
+                                    <option value="english" {{ isset($data->languages) && in_array('english',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>English</option>
+                                    <option value="bengali" {{ isset($data->languages) && in_array('bengali',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>Bengali</option>
+                                    <option value="hindi" {{ isset($data->languages) && in_array('hindi',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>Hindi</option>
+                                    <option value="urdu" {{ isset($data->languages) && in_array('urdu',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>Urdu</option>
+                                    <option value="french" {{ isset($data->languages) && in_array('french',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>French</option>
+                                    <option value="spanish" {{ isset($data->languages) && in_array('spanish',
+                                       explode(',', $data->languages)) ? 'selected' : '' }}>Spanish</option>
+                                    Add more languages as needed
+                                 </select>
+                              </div> -->
+                              <div class="form-group">
+                                 <label>{{ __("message.Languages") }}<span class="reqfield">*</span></label>
+                                 <div>
+                                    <!-- Add options dynamically from your database or use a predefined list -->
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="english" name="languages[]"
+                                          value="english" {{ isset($data->languages) && in_array('english', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="english">English</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="bengali" name="languages[]"
+                                          value="bengali" {{ isset($data->languages) && in_array('bengali', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="bengali">Bengali</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="hindi" name="languages[]"
+                                          value="hindi" {{ isset($data->languages) && in_array('hindi', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="hindi">Hindi</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="urdu" name="languages[]"
+                                          value="urdu" {{ isset($data->languages) && in_array('urdu', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="urdu">Urdu</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="french" name="languages[]"
+                                          value="french" {{ isset($data->languages) && in_array('french', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="french">French</label>
+                                    </div>
+
+                                    <div class="form-check">
+                                       <input type="checkbox" class="form-check-input" id="spanish" name="languages[]"
+                                          value="spanish" {{ isset($data->languages) && in_array('spanish', explode(',',
+                                       $data->languages)) ? 'checked' : '' }}>
+                                       <label class="form-check-label" for="spanish">Spanish</label>
+                                    </div>
+                                    <!-- Add more languages as needed -->
+                                 </div>
                               </div>
+
                            </div>
                            <div class="col-lg-6">
                               <div class="form-group">

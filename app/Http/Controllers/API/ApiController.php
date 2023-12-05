@@ -214,6 +214,97 @@ class ApiController extends Controller
 
     }
 
+    public function filterdoctor(Request $request)
+    {
+        $response = array("status" => "0", "register" => "Validation error");
+
+        // $rules = [
+        //     'consultation_fee' => 'numeric',
+        //     'gender' => 'in:none,male,female',
+        //     'language' => 'string',
+        //     'activities' => 'string',
+        // ];
+
+        // $messages = array(
+        //     'consultation_fee.numeric' => "Consultation fee must be a number",
+        //     'gender.in' => "Invalid gender value",
+        //     'language.string' => "Language must be a string",
+        //     'activities.string' => "Activities must be a string",
+        // );
+
+        // $validator = Validator::make($request->all(), $rules, $messages);
+
+        // if ($validator->fails()) {
+        //     $message = '';
+        //     $messages_l = json_decode(json_encode($validator->messages()), true);
+        //     foreach ($messages_l as $msg) {
+        //         $message .= $msg[0] . ", ";
+        //     }
+        //     $response['msg'] = $message;
+        // } 
+        // else {
+        // Start building the query
+        $query = Doctors::query();
+
+        // Add conditions based on the provided parameters
+        // if ($request->has('consultation_fees')) {
+        //     $query->where('consultation_fees', '<=', $request->get('consultation_fees'));
+        // }
+        if ($request->has('consultation_fees')) {
+            $requestedConsultationFees = (double) $request->get('consultation_fees');
+
+            $query->where(function ($query) use ($requestedConsultationFees) {
+                $query->whereRaw('CAST(consultation_fees AS DOUBLE) <= ?', [$requestedConsultationFees]);
+            });
+        }
+
+        if ($request->has('gender')) {
+            $query->where('gender', '=', $request->get('gender'));
+        }
+
+        if ($request->has('languages')) {
+            $query->where('languages', '=', $request->get('languages'));
+            // Replace 'language_column' with the actual column name in your database
+        }
+
+        // if ($request->has('activities')) {
+        //     $query->where('activities_column', '=', $request->get('activities'));
+        //     // Replace 'activities_column' with the actual column name in your database
+        // }
+
+        // Execute the query
+        $data = $query->select(
+            "id",
+            "name",
+            "address",
+            "image",
+            "department_id",
+            "consultation_fees",
+            DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
+            DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+        )->paginate(10);
+
+        if ($data) {
+            foreach ($data as $k) {
+                $dr = Services::find($k->department_id);
+                if ($dr) {
+                    $k->department_name = $dr->name;
+                } else {
+                    $k->department_name = "";
+                }
+                $k->image = asset('public/upload/doctors') . '/' . $k->image;
+                unset($k->department_id);
+            }
+            $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+        } else {
+            $response = array("status" => 0, "msg" => "No Result Found");
+        }
+        // }
+
+        return json_encode($response, JSON_NUMERIC_CHECK);
+    }
+
+
     public function nearbydoctor(Request $request)
     {
         $response = array("status" => "0", "register" => "Validation error");

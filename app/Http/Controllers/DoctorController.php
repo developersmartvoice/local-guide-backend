@@ -217,13 +217,17 @@ class DoctorController extends Controller
                 }
             }
         }
+        $selectedServices = implode(',', $request->input('services', []));
+        $selectedLanguages = implode(',', $request->input('languages', []));
         $store->name = $request->get("name");
         $store->department_id = $request->get("department_id");
         $store->password = $request->get("password");
         $store->phoneno = $request->get("phoneno");
         $store->aboutus = $request->get("aboutus");
-        $store->services = $request->get("services");
-        $store->healthcare = $request->get("healthcare");
+        // $store->services = $request->get("services");
+        $store->services = $selectedServices;
+        // $store->languages = $request->get("languages");
+        $store->languages = $selectedLanguages;
         $store->address = $request->get("address");
         $store->lat = $request->get("lat");
         $store->lon = $request->get("lon");
@@ -760,7 +764,7 @@ class DoctorController extends Controller
         $store->phoneno = $request->get("phoneno");
         $store->aboutus = $request->get("aboutus");
         $store->services = $request->get("services");
-        $store->healthcare = $request->get("healthcare");
+        $store->languages = $request->get("languages");
         $store->address = $request->get("address");
         $store->lat = $request->get("lat");
         $store->lon = $request->get("lon");
