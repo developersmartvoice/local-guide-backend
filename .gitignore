@@ -20,3 +20,9 @@ yarn-error.log
 *.iml
 .idea/
 *.code-workspace
+
+# Ignore storage/framework/cache directory
+/storage/framework/cache/
+
+# Ignore storage/framework/session directory
+/storage/framework/session/
