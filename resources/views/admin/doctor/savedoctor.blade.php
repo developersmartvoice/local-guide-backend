@@ -126,7 +126,7 @@
                            </div>
                            <div class="col-lg-3">
                               <div class="form-group">
-                                 <label for="aboutus">{{__("City")}}<span class="reqfield">*</span></label>
+                                 <label for="city">{{__("City")}}<span class="reqfield">*</span></label>
                                  <input type="text" required name="city" value="{{isset($data->city)?$data->city:''}}"
                                     class="form-control">
                               </div>
@@ -250,7 +250,6 @@
                                     <!-- Add more services as needed -->
                                  </div>
                               </div>
-
                            </div>
                         </div>
                         <div class="row">

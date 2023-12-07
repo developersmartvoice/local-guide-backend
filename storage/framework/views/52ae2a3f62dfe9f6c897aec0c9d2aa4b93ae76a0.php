@@ -1,0 +1,1 @@
+Payment Failed<?php /**PATH C:\xampp\htdocs\local-guide-backend\resources\views/payment_failed.blade.php ENDPATH**/ ?>

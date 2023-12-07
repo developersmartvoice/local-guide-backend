@@ -129,7 +129,7 @@
                            </div>
                            <div class="col-lg-3">
                               <div class="form-group">
-                                 <label for="aboutus"><?php echo e(__("City")); ?><span class="reqfield">*</span></label>
+                                 <label for="city"><?php echo e(__("City")); ?><span class="reqfield">*</span></label>
                                  <input type="text" required name="city" value="<?php echo e(isset($data->city)?$data->city:''); ?>"
                                     class="form-control">
                               </div>
