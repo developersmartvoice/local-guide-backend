@@ -251,7 +251,6 @@
                                     <!-- Add more services as needed -->
                                  </div>
                               </div>
-
                            </div>
                         </div>
                         <div class="row">

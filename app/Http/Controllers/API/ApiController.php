@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\API;
 
+use Exception;
+
 error_reporting(-1);
 ini_set('display_errors', 'On');
 use Illuminate\Http\Request;
@@ -35,6 +37,7 @@ use App\Models\Subscriber;
 use App\Models\Banner;
 use App\Models\About;
 use App\Models\Privecy;
+use Illuminate\Support\Facades\Log;
 use Hash;
 use Mail;
 use DateTime;
@@ -1856,6 +1859,7 @@ class ApiController extends Controller
 
     public function doctoreditprofile(Request $request)
     {
+        // Log::info('Received request:', $request->all());
         $response = array("success" => "0", "register" => "Validation error");
         $rules = [
             "doctor_id" => 'required',
@@ -1868,7 +1872,7 @@ class ApiController extends Controller
             "lon" => "required",
             "phoneno" => "required",
             "services" => "required",
-            "healthcare" => "required",
+            "languages" => "required",
             "department_id" => "required",
             "facebook_url" => "required",
             "twitter_url" => "required",
@@ -1887,7 +1891,7 @@ class ApiController extends Controller
             'lon.required' => "lon is required",
             'phoneno.required' => "phoneno is required",
             'services.required' => "services is required",
-            'healthcare.required' => "healthcare is required",
+            'languages.required' => "languages is required",
             'department_id.required' => "department_id is required",
             'facebook_url.required' => "facebook_url is required",
             'twitter_url.required' => "twitter_url is required",
@@ -1895,6 +1899,8 @@ class ApiController extends Controller
             //'time_json.required' => "time_json is required"
         );
         $validator = Validator::make($request->all(), $rules, $messages);
+        // Log::info('Raw services:', $request->input('services'));
+        // Log::info('Raw languages:', $request->input('languages'));
         if ($validator->fails()) {
             $message = '';
             $messages_l = json_decode(json_encode($validator->messages()), true);
@@ -1903,8 +1909,6 @@ class ApiController extends Controller
             }
             $response['register'] = $message;
         } else {
-
-
             $store = Doctors::find($request->get("doctor_id"));
             if ($store) {
                 DB::beginTransaction();
@@ -1930,13 +1934,25 @@ class ApiController extends Controller
                             }
                         }
                     }
+
                     $store->name = $request->get("name");
                     $store->department_id = $request->get("department_id");
                     $store->password = $request->get("password");
                     $store->phoneno = $request->get("phoneno");
                     $store->aboutus = $request->get("aboutus");
-                    $store->services = $request->get("services");
-                    $store->healthcare = $request->get("healthcare");
+                    // $selectedServices = is_array($request->input('services')) ? implode(',', $request->input('services')) : '';
+                    // $selectedLanguages = is_array($request->input('languages')) ? implode(',', $request->input('languages')) : '';
+
+                    // $selectedServices = explode(',', $request->input('services'));
+                    // $selectedLanguages = explode(',', $request->input('languages'));
+                    // $selectedServices = implode(',', $request->input('services', []));
+                    // $selectedLanguages = implode(',', $request->input('languages', []));
+                    // $store->services = $request->get("services");
+                    $selectedServices = implode(',', explode(',', $request->input('services')));
+                    $selectedLanguages = implode(',', explode(',', $request->input('languages')));
+                    $store->services = $selectedServices;
+                    // $store->languages = $request->get("languages");
+                    $store->languages = $selectedLanguages;
                     $store->address = $request->get("address");
                     $store->lat = $request->get("lat");
                     $store->lon = $request->get("lon");
@@ -1981,14 +1997,18 @@ class ApiController extends Controller
                     DB::commit();
                     $response['success'] = "1";
                     $response['register'] = "Profile Update Successfully";
+                    return json_encode($response, JSON_NUMERIC_CHECK);
                 } catch (Exception $e) {
                     DB::rollback();
+                    Log::error("Exception occurred: " . $e->getMessage());
                     $response['success'] = "0";
                     $response['register'] = "Something Wrong";
+                    return json_encode($response, JSON_NUMERIC_CHECK);
                 }
             } else {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
+                return json_encode($response, JSON_NUMERIC_CHECK);
             }
         }
         return json_encode($response, JSON_NUMERIC_CHECK);
