@@ -339,8 +339,8 @@ class ApiController extends Controller
                     "doctors.department_id",
                     "doctors.image",
                     "doctors.consultation_fees",
-                    "doctors.aboutus"
-                    ,
+                    "doctors.aboutus",
+                    "doctors.images",
                     DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
                            * cos(radians(doctors.lat)) 
                            * cos(radians(doctors.lon) - radians(" . $lon . ")) 
@@ -358,6 +358,20 @@ class ApiController extends Controller
                     $department = Services::find($k->department_id);
                     $k->department_name = isset($department) ? $department->name : "";
                     $k->image = asset("public/upload/doctors") . '/' . $k->image;
+
+                    // Check if the 'images' property exists
+                    if (isset($k->images)) {
+                        // Convert the images field value from JSON to an array
+                        $k->images = json_decode($k->images, true);
+
+                        // Add the full image URLs to the images array
+                        if ($k->images) {
+                            $k->images = array_map(function ($image) {
+                                return asset("public/upload/doctors") . '/' . $image;
+                            }, $k->images);
+                        }
+                    }
+
                     unset($k->department_id);
                 }
                 $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
