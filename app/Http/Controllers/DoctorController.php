@@ -217,6 +217,25 @@ class DoctorController extends Controller
                 }
             }
         }
+        $img_urls = []; // Array to store image filenames
+
+        // Check if multiple files are present
+        if ($request->hasFile('upload_images')) {
+            foreach ($request->file('upload_images') as $file) {
+                $filename = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension() ?: 'png';
+                $folderName = '/upload/doctors/';
+                $picture = time() . '_' . uniqid() . '.' . $extension; // Using uniqid to ensure uniqueness
+                $destinationPath = public_path() . $folderName;
+                $file->move($destinationPath, $picture);
+                $img_urls[] = $picture;
+            }
+        }
+
+        // Concatenate image filenames with existing ones (if any)
+        $existing_images = json_decode($store->images, true) ?: [];
+        $img_urls = array_merge($existing_images, $img_urls);
+        $store->images = json_encode($img_urls);
         $selectedServices = implode(',', $request->input('services', []));
         $selectedLanguages = implode(',', $request->input('languages', []));
         $store->name = $request->get("name");
