@@ -1520,6 +1520,17 @@ class ApiController extends Controller
                 // }else{
                 //   $data->image = 'user.png';
                 // }
+                if (isset($data->images)) {
+                    // Convert the images field value from JSON to an array
+                    $data->images = json_decode($data->images, true);
+
+                    // Add the full image URLs to the images array
+                    if ($data->images) {
+                        $data->images = array_map(function ($image) {
+                            return asset("public/upload/doctors") . '/' . $image;
+                        }, $data->images);
+                    }
+                }
                 $data->image = asset('public/upload/doctors') . '/' . $data->image;
                 $data->avgratting = round(Review::where("doc_id", $request->get("doctor_id"))->avg('rating'));
 

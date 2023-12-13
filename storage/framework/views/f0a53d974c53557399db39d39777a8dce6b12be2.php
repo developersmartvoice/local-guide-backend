@@ -254,7 +254,7 @@
                   <li>
                      <a href="<?php echo e(route('doctor_report')); ?>" class="waves-effect">
                         <i class="uil-invoice"></i>
-                        <span>Doctors </span>
+                        <span>Guides </span>
                      </a>
                   </li>
                   <li>
@@ -266,7 +266,7 @@
                   <li>
                      <a href="<?php echo e(route('do_sub_report')); ?>" class="waves-effect">
                         <i class="uil-invoice"></i>
-                        <span>Doctor Subscription </span>
+                        <span>Guide Subscription </span>
                      </a>
                   </li>
                   <li>
