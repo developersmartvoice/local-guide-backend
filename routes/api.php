@@ -51,7 +51,8 @@ Route::any("Reportspam", [ApiController::class, "saveReportspam"]);
 Route::any("appointmentstatuschange", [ApiController::class, "appointmentstatuschange"]);
 Route::any("forgotpassword", [ApiController::class, "forgotpassword"]);
 Route::get("getalldoctors", [ApiController::class, "getalldoctors"]);
-
+Route::post('createtrip', [ApiController::class, 'createTripGuide']);
+Route::get('gettrip', [ApiController::class, 'getTripGuides']);
 Route::get("getholiday", [ApiController::class, "getholiday"]);
 Route::any("saveholiday", [ApiController::class, "saveholiday"]);
 Route::get("deleteholiday", [ApiController::class, "deleteholiday"]);

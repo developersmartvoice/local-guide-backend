@@ -37,6 +37,7 @@ use App\Models\Subscriber;
 use App\Models\Banner;
 use App\Models\About;
 use App\Models\Privecy;
+use App\Models\TripGuide;
 use Illuminate\Support\Facades\Log;
 use Hash;
 use Mail;
@@ -1960,6 +1961,25 @@ class ApiController extends Controller
                         }
                     }
 
+                    $uploadedImagePaths = [];
+                    if ($request->hasFile('images')) {
+                        foreach ($request->file('images') as $file) {
+                            $extension = $file->getClientOriginalExtension() ?: 'png';
+                            $folderName = '/upload/doctors/';
+                            $picture = time() . '_' . uniqid() . '.' . $extension;
+                            $destinationPath = public_path() . $folderName;
+                            $file->move($destinationPath, $picture);
+                            $uploadedImagePaths[] = $folderName . $picture; // Save the complete path
+                        }
+                    }
+
+                    // Concatenate image filenames with existing ones (if any)
+                    $existingImagePaths = json_decode($store->images, true) ?: [];
+                    $uploadedImagePaths = array_merge($existingImagePaths, $uploadedImagePaths);
+
+                    // Update 'images' field in the database
+                    $store->images = json_encode($uploadedImagePaths);
+
                     $store->name = $request->get("name");
                     $store->department_id = $request->get("department_id");
                     $store->password = $request->get("password");
@@ -2926,4 +2946,47 @@ class ApiController extends Controller
         }
         return Response::json($response);
     }
+
+    public function createTripGuide(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'guide_id' => 'required|numeric', // Assuming guide_id is a numeric field
+            'location' => 'required|string',
+            'startDate' => 'required|date',
+            'endDate' => 'required|date|after_or_equal:startDate',
+            'duration' => 'required|numeric',
+            'numberOfPeople' => 'required|numeric',
+            'gender' => 'required|string',
+        ]);
+
+        // Create a new trip guide entry with the provided guide_id
+        $tripGuide = TripGuide::create([
+            'guide_id' => $request->input('guide_id'),
+            'destination' => $request->input('location'),
+            'start_date' => $request->input('startDate'),
+            'end_date' => $request->input('endDate'),
+            'duration' => $request->input('duration'),
+            'people_quantity' => $request->input('numberOfPeople'),
+            'type' => $request->input('gender'),
+        ]);
+
+        // You can return a response, such as the created trip guide
+        return response()->json($tripGuide, 201);
+    }
+
+    public function getTripGuides(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'guide_id' => 'required|numeric',
+        ]);
+
+        // Retrieve trips based on the guide_id
+        $guideId = $request->input('guide_id');
+        $tripGuides = TripGuide::where('guide_id', $guideId)->get();
+
+        return response()->json($tripGuides, 200);
+    }
 }
+
