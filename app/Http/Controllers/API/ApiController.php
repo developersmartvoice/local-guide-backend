@@ -2986,7 +2986,21 @@ class ApiController extends Controller
         $guideId = $request->input('guide_id');
         $tripGuides = TripGuide::where('guide_id', $guideId)->get();
 
-        return response()->json($tripGuides, 200);
+
+        if ($tripGuides) {
+            $response['status'] = 1;
+            $response['msg'] = "Trips List are";
+            $response['data'] = $tripGuides;
+
+        } else {
+            $data3 = array();
+            $response['status'] = 0;
+            $response['message'] = "Data Not Found";
+            $response['data'] = $data3;
+        }
+        return Response::json($response);
+
+        // return response()->json($tripGuides, 200);
     }
 }
 
