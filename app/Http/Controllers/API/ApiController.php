@@ -218,42 +218,17 @@ class ApiController extends Controller
 
     }
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     public function filterdoctor(Request $request)
     {
         $response = array("status" => "0", "register" => "Validation error");
 
-        // $rules = [
-        //     'consultation_fee' => 'numeric',
-        //     'gender' => 'in:none,male,female',
-        //     'language' => 'string',
-        //     'activities' => 'string',
-        // ];
-
-        // $messages = array(
-        //     'consultation_fee.numeric' => "Consultation fee must be a number",
-        //     'gender.in' => "Invalid gender value",
-        //     'language.string' => "Language must be a string",
-        //     'activities.string' => "Activities must be a string",
-        // );
-
-        // $validator = Validator::make($request->all(), $rules, $messages);
-
-        // if ($validator->fails()) {
-        //     $message = '';
-        //     $messages_l = json_decode(json_encode($validator->messages()), true);
-        //     foreach ($messages_l as $msg) {
-        //         $message .= $msg[0] . ", ";
-        //     }
-        //     $response['msg'] = $message;
-        // } 
-        // else {
+        
         // Start building the query
         $query = Doctors::query();
 
-        // Add conditions based on the provided parameters
-        // if ($request->has('consultation_fees')) {
-        //     $query->where('consultation_fees', '<=', $request->get('consultation_fees'));
-        // }
+       
         if ($request->has('consultation_fees')) {
             $requestedConsultationFees = (double) $request->get('consultation_fees');
 
@@ -267,21 +242,77 @@ class ApiController extends Controller
         }
 
         if ($request->has('languages')) {
-            $query->where('languages', '=', $request->get('languages'));
-            // Replace 'language_column' with the actual column name in your database
+            // Assuming $data is fetched from the database
+            $data = Doctors::all(); // Fetch data from your database
+        
+            $languages = $request->get('languages');
+            $wordsToCount = explode(",", $languages);
+            $counts = [];
+            
+            // Count occurrences of each word in the dataset
+            foreach ($data as $row) {
+                $words = explode(",", $row->languages); // Assuming 'languages' is the column name
+                foreach ($words as $word) {
+                    if (in_array($word, $wordsToCount)) {
+                        if (!isset($counts[$word])) {
+                            $counts[$word] = 1;
+                        } else {
+                            $counts[$word]++;
+                        }
+                    }
+                }
+            }
+        
+            // Constructing the query condition based on the counts
+            $query->where(function ($query) use ($counts) {
+                foreach ($counts as $word => $count) {
+                    $query->orWhere('languages', 'like', '%' . $word . '%');
+                }
+            });
         }
+        
 
-        // if ($request->has('activities')) {
-        //     $query->where('activities_column', '=', $request->get('activities'));
-        //     // Replace 'activities_column' with the actual column name in your database
-        // }
+            
+        if ($request->has('services')) {
+            // Assuming $data is fetched from the database
+            $data = Doctors::all(); // Fetch data from your database
+        
+            $service = $request->get('services');
+            $wordsToCount = explode(",", $service);
+            $counts = [];
+            
+            // Count occurrences of each word in the dataset
+            foreach ($data as $row) {
+                $words = explode(",", $row->services); // Assuming 'services' is the column name
+                foreach ($words as $word) {
+                    if (in_array($word, $wordsToCount)) {
+                        if (!isset($counts[$word])) {
+                            $counts[$word] = 1;
+                        } else {
+                            $counts[$word]++;
+                        }
+                    }
+                }
+            }
+        
+            // Constructing the query condition based on the counts
+            $query->where(function ($query) use ($counts) {
+                foreach ($counts as $word => $count) {
+                    $query->orWhere('services', 'like', '%' . $word . '%');
+                }
+            });
+        }
+          
+
 
         // Execute the query
         $data = $query->select(
             "id",
             "name",
+            "languages",
             "address",
             "image",
+            "services",
             "department_id",
             "consultation_fees",
             DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
@@ -303,11 +334,11 @@ class ApiController extends Controller
         } else {
             $response = array("status" => 0, "msg" => "No Result Found");
         }
-        // }
 
         return json_encode($response, JSON_NUMERIC_CHECK);
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////
 
     public function nearbydoctor(Request $request)
     {
