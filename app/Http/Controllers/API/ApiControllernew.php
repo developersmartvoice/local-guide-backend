@@ -74,6 +74,13 @@ class ApiControllernew extends Controller
 
    }
 
+
+
+ 
+
+
+
+
    public function nearbydoctor(Request $request){
        $response = array("status" => "0", "register" => "Validation error");
            $rules = [

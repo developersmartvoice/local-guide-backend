@@ -16,5 +16,10 @@ class Doctors extends Model
      public function reviewls(){
      	return $this->hasmany("App\Models\Review",'doc_id','id');
      }
+
+     public function tripGuides()
+    {
+        return $this->hasMany(TripGuide::class, 'guide_id', 'id');
+    }
 }
 ?>
