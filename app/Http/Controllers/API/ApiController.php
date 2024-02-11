@@ -220,6 +220,76 @@ class ApiController extends Controller
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+
+    public function notifyGuidesAboutTrip(Request $request) {
+        $response = ["status" => 0, "msg" => "Validation error", "trip_count" => 0];
+    
+        // Validate the input
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|exists:doctors,id',
+        ]);
+    
+        if ($validator->fails()) {
+            $response['msg'] = $validator->errors()->first();
+        } else {
+            $doctorId = $request->input('id');
+    
+            // Get the doctor's details
+            $doctor = Doctors::findOrFail($doctorId);
+            $city = $doctor->city;
+    
+            // Find trip guides with matching destination and not expired end date
+            $tripGuides = TripGuide::where('destination', $city)
+                ->where('end_date', '>', Carbon::now())
+                ->get();
+    
+            // Count the number of trips in the same city
+            $tripCount = $tripGuides->count();
+            $response['trip_count'] = $tripCount;
+    
+            if ($tripGuides->isEmpty()) {
+                $response['msg'] = "No active trip guides found for the doctor's city.";
+            } else {
+                $notifiedGuides = [];
+    
+                // Filter trip guides and send notifications
+                foreach ($tripGuides as $tripGuide) {
+                    // Check if the doctor's ID is different from the guide_id of the trip guide
+                    if ($doctorId != $tripGuide->guide_id) {
+                        // Send notification to the doctor
+                        // Code to send notification goes here
+                        // For example:
+                        // Notification::send($doctor, new TripNotification($tripGuide));
+    
+                        // Collect notified guide details
+                        $notifiedGuides[] = [
+                            'guide_id' => $tripGuide->guide_id,
+                            'destination' => $tripGuide->destination,
+                            'start_date' => $tripGuide->start_date,
+                            'end_date' => $tripGuide->end_date,
+                            'duration' => $tripGuide->duration,
+                            'people_quantity' => $tripGuide->people_quantity,
+                            'type' => $tripGuide->type,
+                        ];
+                    }
+                }
+    
+                $response = [
+                    "status" => 1,
+                    "msg" => "Notifications sent successfully to guides of the doctor's city.",
+                    "notified_guides" => $notifiedGuides,
+                    "trip_count" => $tripCount,
+                ];
+            }
+        }
+    
+        return response()->json($response);
+    }
+
+    
+
     public function filterdoctor(Request $request)
     {
         $response = array("status" => "0", "register" => "Validation error");
