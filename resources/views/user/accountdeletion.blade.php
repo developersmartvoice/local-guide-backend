@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Book Appointment | Account Help</title>
+<title>Meet Local | Account Deletion</title>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
@@ -22,8 +22,8 @@ and is wrapped around the whole page content, except for the footer in this exam
 
   <!-- Header -->
   <header class="w3-container w3-center w3-padding-48 w3-white">
-    <h1 class="w3-xxxlarge"><b>Book-Appointment App</b></h1>
-    <h6>Delivering Happiness</h6>
+    <h1 class="w3-xxxlarge"><b>Meet Local App</b></h1>
+    <h6>Delivering Local Guide Services for tourists.</h6>
   </header>
 
   <!-- Image header -->
