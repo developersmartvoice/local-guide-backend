@@ -8,18 +8,20 @@ class Doctors extends Model
 {
     protected $table = 'doctors';
     protected $primaryKey = 'id';
-  
-     public function departmentls(){
-     	return $this->hasone("App\Models\Services",'id','department_id');
-     }
-   
-     public function reviewls(){
-     	return $this->hasmany("App\Models\Review",'doc_id','id');
-     }
+    // protected $fillable = ['motto']; // Add 'motto' to the $fillable array
 
-     public function tripGuides()
+    public function departmentls()
+    {
+        return $this->hasOne("App\Models\Services", 'id', 'department_id');
+    }
+
+    public function reviewls()
+    {
+        return $this->hasMany("App\Models\Review", 'doc_id', 'id');
+    }
+
+    public function tripGuides()
     {
         return $this->hasMany(TripGuide::class, 'guide_id', 'id');
     }
 }
-?>

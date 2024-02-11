@@ -23,6 +23,30 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
 Route::any("notifyGuidesAboutTrip", [ApiController::class, "notifyGuidesAboutTrip"]);
 
+Route::any("updateMotto", [ApiController::class, "updateMotto"]);
+Route::any("updateIWillShowYou", [ApiController::class, "updateIWillShowYou"]);
+Route::any("updateConsultationFees", [ApiController::class, "updateConsultationFees"]);
+Route::any("updateAboutUs", [ApiController::class, "updateAboutUs"]);
+Route::any("updateCity", [ApiController::class, "updateCity"]);
+Route::any("updateGender", [ApiController::class, "updateGender"]);
+Route::any("updateServices", [ApiController::class, "updateServices"]);
+Route::any("updateLanguages", [ApiController::class, "updateLanguages"]);
+
+
+Route::any("get_motto", [ApiController::class, "getMotto"]);
+Route::any("getIWillShowYou", [ApiController::class, "getIWillShowYou"]);
+Route::any("getConsultationFees", [ApiController::class, "getConsultationFees"]);
+Route::any("getAboutUs", [ApiController::class, "getAboutUs"]);
+Route::any("getCity", [ApiController::class, "getCity"]);
+Route::any("getGender", [ApiController::class, "getGender"]);
+Route::any("getServices", [ApiController::class, "getServices"]);
+Route::any("getLanguages", [ApiController::class, "getLanguages"]);
+
+
+
+
+
+
 
 Route::any("filterdoctor", [ApiController::class, "filterdoctor"]);
 Route::any("nearbydoctor", [ApiController::class, "nearbydoctor"]);

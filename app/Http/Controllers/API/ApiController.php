@@ -222,6 +222,333 @@ class ApiController extends Controller
 
 
 
+    public function updateMotto(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'motto' => 'required|string|max:50',
+        ]);
+    
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+    
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+    
+        // Update the motto field
+        $doctor->motto = $request->motto;
+        $doctor->save();
+    
+        return response()->json(['message' => 'Motto updated successfully', 'doctor' => $doctor]);
+    }
+    
+
+    public function updateIWillShowYou(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'I_will_show_you' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Model not found'], 404);
+        }
+
+        // Update the I_will_show_you
+        $doctor->I_will_show_you = $request->I_will_show_you;
+        $doctor->save();
+
+        return response()->json(['message' => 'I will show you updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function updateConsultationFees(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'consultation_fees' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Model not found'], 404);
+        }
+
+        // Update the consultation_fees
+        $doctor->consultation_fees = $request->consultation_fees;
+        $doctor->save();
+
+        return response()->json(['message' => 'Consultation fees updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function updateAboutUs(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'aboutus' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the aboutus
+        $doctor->aboutus = $request->aboutus;
+        $doctor->save();
+
+        return response()->json(['message' => 'About us updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function updateCity(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'city' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the city
+        $doctor->city = $request->city;
+        $doctor->save();
+
+        return response()->json(['message' => 'City updated successfully', 'doctor' => $doctor]);
+    }
+
+
+
+    public function updateGender(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'gender' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the gender
+        $doctor->gender = $request->gender;
+        $doctor->save();
+
+        return response()->json(['message' => 'Gender updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function updateServices(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'services' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Convert comma-separated services string to an array and then back to a comma-separated string
+        $selectedServices = implode(',', explode(',', $request->input('services')));
+
+        // Update the services
+        $doctor->services = $selectedServices;
+        $doctor->save();
+
+        return response()->json(['message' => 'Services updated successfully', 'doctor' => $doctor]);
+    }
+
+
+
+    public function updateLanguages(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'languages' => 'required|string',
+            // Add any other validation rules as needed
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Convert comma-separated languages string to an array and then back to a comma-separated string
+        $selectedLanguages = implode(',', explode(',', $request->input('languages')));
+
+        // Update the languages
+        $doctor->languages = $request->languages;
+        $doctor->save();
+
+        return response()->json(['message' => 'Languages updated successfully', 'doctor' => $doctor]);
+    }
+
+
+
+    public function getMotto(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's motto
+        return response()->json([
+            'message' => 'Motto retrieved successfully',
+            'motto' => $doctor->motto
+        ]);
+    }
+
+
+    public function getIWillShowYou(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's i will show you
+        return response()->json([
+            'message' => 'I will show you retrieved successfully',
+            'I_will_show_you' => $doctor->I_will_show_you
+        ]);
+    }
+
+    public function getConsultationFees(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's consultation fees
+        return response()->json([
+            'message' => 'Consultation fees retrieved successfully',
+            'consultation_fees' => $doctor->consultation_fees
+        ]);
+    }
+
+    public function getAboutUs(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's about us
+        return response()->json([
+            'message' => 'About us retrieved successfully',
+            'aboutus' => $doctor->aboutus
+        ]);
+    }
+
+
+    public function getCity(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's city
+        return response()->json([
+            'message' => 'City retrieved successfully',
+            'city' => $doctor->city
+        ]);
+    }
+
+
+    public function getGender(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's gender
+        return response()->json([
+            'message' => 'Gender retrieved successfully',
+            'gender' => $doctor->gender
+        ]);
+    }
+
+
+    public function getServices(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's services
+        return response()->json([
+            'message' => 'Services retrieved successfully',
+            'services' => $doctor->services
+        ]);
+    }
+
+
+    public function getLanguages(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's Languages
+        return response()->json([
+            'message' => 'Languages retrieved successfully',
+            'languages' => $doctor->languages
+        ]);
+    }
+
+
+
 
     public function notifyGuidesAboutTrip(Request $request) {
         $response = ["status" => 0, "msg" => "Validation error", "trip_count" => 0];
@@ -408,7 +735,7 @@ class ApiController extends Controller
         return json_encode($response, JSON_NUMERIC_CHECK);
     }
 
-    /////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function nearbydoctor(Request $request)
     {
