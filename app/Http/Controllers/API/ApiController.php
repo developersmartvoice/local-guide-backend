@@ -263,36 +263,36 @@ class ApiController extends Controller
 
 
     public function updateSendOffer(Request $request)
-{
-    // Validate the incoming request data
-    $request->validate([
-        'trip_id' => 'required|integer',
-        'sender_id' => 'required|integer',
-        'recipient_id' => 'required|integer',
-        'date' => 'required|date_format:Y-m-d',
-        'duration' => 'required|integer',
-        'timing' => 'required|string',
-        'message' => 'required|string',
-    ]);
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'trip_id' => 'required|integer',
+            'sender_id' => 'required|integer',
+            'recipient_id' => 'required|integer',
+            'date' => 'required|date_format:Y-m-d',
+            'duration' => 'required|integer',
+            'timing' => 'required|string',
+            'message' => 'required|string',
+        ]);
 
-    // Check if a record with the same combination of trip_id and sender_id already exists
-    $existingOffer = SendOffer::where('trip_id', $request->trip_id)
-                                ->where('sender_id', $request->sender_id)
-                                ->first();
+        // Check if a record with the same combination of trip_id and sender_id already exists
+        $existingOffer = SendOffer::where('trip_id', $request->trip_id)
+            ->where('sender_id', $request->sender_id)
+            ->first();
 
-    if ($existingOffer) {
-        return response()->json(['error' => 'Offer with the same trip_id and sender_id already exists.'], 409);
+        if ($existingOffer) {
+            return response()->json(['error' => 'Offer with the same trip_id and sender_id already exists.'], 409);
+        }
+
+        // Create a new SendOffer instance and set the attributes
+        $sendOffer = new SendOffer();
+        $sendOffer->fill($request->all());
+
+        // Save the SendOffer instance
+        $sendOffer->save();
+
+        return response()->json(['message' => 'Send offer created successfully', 'send_offer' => $sendOffer], 201);
     }
-
-    // Create a new SendOffer instance and set the attributes
-    $sendOffer = new SendOffer();
-    $sendOffer->fill($request->all());
-
-    // Save the SendOffer instance
-    $sendOffer->save();
-
-    return response()->json(['message' => 'Send offer created successfully', 'send_offer' => $sendOffer], 201);
-}
 
 
     public function updateName(Request $request)
@@ -315,6 +315,48 @@ class ApiController extends Controller
         $doctor->save();
 
         return response()->json(['message' => 'Name updated successfully', 'doctor' => $doctor]);
+    }
+    public function updateEmail(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'email' => 'required|string',
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the email field
+        $doctor->email = $request->email;
+        $doctor->save();
+
+        return response()->json(['message' => 'Email updated successfully', 'doctor' => $doctor]);
+    }
+    public function updatePhoneNo(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'phoneno' => 'required|string',
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the email field
+        $doctor->phoneno = $request->phoneno;
+        $doctor->save();
+
+        return response()->json(['message' => 'Phone No. updated successfully', 'doctor' => $doctor]);
     }
 
 
@@ -531,6 +573,34 @@ class ApiController extends Controller
         return response()->json([
             'message' => 'Name retrieved successfully',
             'name' => $doctor->name
+        ]);
+    }
+    public function getEmail(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's name
+        return response()->json([
+            'message' => 'Email retrieved successfully',
+            'email' => $doctor->email
+        ]);
+    }
+    public function getPhoneNo(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's name
+        return response()->json([
+            'message' => 'Phone No. retrieved successfully',
+            'phoneno' => $doctor->phoneno
         ]);
     }
 
