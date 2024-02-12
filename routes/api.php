@@ -19,10 +19,13 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+Route::any("updateSendOffer", [ApiController::class, "updateSendOffer"]);
+
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
 Route::any("notifyGuidesAboutTrip", [ApiController::class, "notifyGuidesAboutTrip"]);
 
+Route::any("updateName", [ApiController::class, "updateName"]);
 Route::any("updateMotto", [ApiController::class, "updateMotto"]);
 Route::any("updateIWillShowYou", [ApiController::class, "updateIWillShowYou"]);
 Route::any("updateConsultationFees", [ApiController::class, "updateConsultationFees"]);
@@ -33,6 +36,7 @@ Route::any("updateServices", [ApiController::class, "updateServices"]);
 Route::any("updateLanguages", [ApiController::class, "updateLanguages"]);
 
 
+Route::any("getName", [ApiController::class, "getName"]);
 Route::any("get_motto", [ApiController::class, "getMotto"]);
 Route::any("getIWillShowYou", [ApiController::class, "getIWillShowYou"]);
 Route::any("getConsultationFees", [ApiController::class, "getConsultationFees"]);
