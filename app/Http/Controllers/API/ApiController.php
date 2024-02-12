@@ -1249,6 +1249,45 @@ class ApiController extends Controller
 
     }
 
+    public function deleteDoctor(Request $request)
+    {
+        $response = array("success" => "0", "delete" => "Validation error");
+
+        $rules = [
+            'id' => 'required|exists:doctors,id',
+        ];
+
+        $messages = array(
+            'id.required' => "Doctor ID is required",
+            'id.exists' => "Invalid Doctor ID",
+        );
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            $message = '';
+            $messages_l = json_decode(json_encode($validator->messages()), true);
+            foreach ($messages_l as $msg) {
+                $message .= $msg[0] . ", ";
+            }
+            $response['delete'] = $message;
+        } else {
+            // Valid ID, proceed with deletion
+            $doctor = Doctors::find($request->get('id'));
+
+            if ($doctor) {
+                $doctor->delete();
+                $response['success'] = "1";
+                $response['delete'] = "User deleted successfully";
+            } else {
+                $response['delete'] = "User not found";
+            }
+        }
+
+        return json_encode($response, JSON_NUMERIC_CHECK);
+    }
+
+
     public function getspeciality()
     {
         //$data=Services::select('id','name','icon')->paginate(10);

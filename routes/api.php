@@ -57,6 +57,7 @@ Route::any("user_reject_appointment", [ApiController::class, "user_reject_appoin
 Route::any("savetoken", [ApiController::class, "storetoken"]);
 Route::any("login", [ApiController::class, "showlogin"]);
 Route::any("doctorregister", [ApiController::class, "doctorregister"]);
+Route::any("deletedoctor", [ApiController::class, "deleteDoctor"]);
 Route::any("doctorlogin", [ApiController::class, "doctorlogin"]);
 Route::any("getspeciality", [ApiController::class, "getspeciality"]);
 Route::any("bookappointment", [ApiController::class, "bookappointment"]);
