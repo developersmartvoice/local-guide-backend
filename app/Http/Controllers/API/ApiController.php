@@ -29,6 +29,7 @@ use App\Models\BookAppointment;
 use App\Models\SlotTiming;
 use App\Models\Doctor_Hoilday;
 use App\Models\Schedule;
+use App\Models\SendOffer;
 use App\Models\Reportspam;
 use App\Models\Settlement;
 use App\Models\Subscription;
@@ -219,6 +220,103 @@ class ApiController extends Controller
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
+    // public function updateSendOffer(Request $request)
+    // {
+    //     // Validate the incoming request data
+    //     $request->validate([
+    //         'trip_id' => 'required|integer',
+    //         'sender_id' => 'required|integer',
+    //         'recipient_id' => 'required|integer',
+    //         'date' => 'required|date_format:Y-m-d',
+    //         'duration' => 'required|integer',
+    //         'timing' => 'required|string',
+    //         'message' => 'required|string',
+    //         'created_at' => 'required|date_format:Y-m-d H:i:s',
+    //         'updated_at' => 'required|date_format:Y-m-d H:i:s',
+    //     ]);
+
+    //     // Create a new SendOffer instance
+    //     $sendOffer = new SendOffer();
+
+    //     // Assign values from the request to the SendOffer instance
+    //     $sendOffer->trip_id = $request->trip_id;
+    //     $sendOffer->sender_id = $request->sender_id;
+    //     $sendOffer->recipient_id = $request->recipient_id;
+    //     $sendOffer->date = $request->date;
+    //     $sendOffer->duration = $request->duration;
+    //     $sendOffer->timing = $request->timing;
+    //     $sendOffer->message = $request->message;
+    //     $sendOffer->created_at = $request->created_at;
+    //     $sendOffer->updated_at = $request->updated_at;
+
+    //     // Save the SendOffer instance
+    //     $sendOffer->save();
+
+    //     return response()->json(['message' => 'Send offer created successfully', 'send_offer' => $sendOffer], 201);
+    // }
+
+
+
+
+    public function updateSendOffer(Request $request)
+{
+    // Validate the incoming request data
+    $request->validate([
+        'trip_id' => 'required|integer',
+        'sender_id' => 'required|integer',
+        'recipient_id' => 'required|integer',
+        'date' => 'required|date_format:Y-m-d',
+        'duration' => 'required|integer',
+        'timing' => 'required|string',
+        'message' => 'required|string',
+    ]);
+
+    // Check if a record with the same combination of trip_id and sender_id already exists
+    $existingOffer = SendOffer::where('trip_id', $request->trip_id)
+                                ->where('sender_id', $request->sender_id)
+                                ->first();
+
+    if ($existingOffer) {
+        return response()->json(['error' => 'Offer with the same trip_id and sender_id already exists.'], 409);
+    }
+
+    // Create a new SendOffer instance and set the attributes
+    $sendOffer = new SendOffer();
+    $sendOffer->fill($request->all());
+
+    // Save the SendOffer instance
+    $sendOffer->save();
+
+    return response()->json(['message' => 'Send offer created successfully', 'send_offer' => $sendOffer], 201);
+}
+
+
+    public function updateName(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'name' => 'required|string',
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the name field
+        $doctor->name = $request->name;
+        $doctor->save();
+
+        return response()->json(['message' => 'Name updated successfully', 'doctor' => $doctor]);
+    }
+
 
 
 
@@ -420,6 +518,21 @@ class ApiController extends Controller
         return response()->json(['message' => 'Languages updated successfully', 'doctor' => $doctor]);
     }
 
+
+    public function getName(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's name
+        return response()->json([
+            'message' => 'Name retrieved successfully',
+            'name' => $doctor->name
+        ]);
+    }
 
 
     public function getMotto(Request $request)
