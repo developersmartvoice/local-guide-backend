@@ -188,10 +188,10 @@ class ApiController extends Controller
             }
             $response['msg'] = $message;
         } else {
-            $data = Doctors::Where('address', 'like', '%' . $request->get("term") . '%')->select(
+            $data = Doctors::Where('city', 'like', '%' . $request->get("term") . '%')->select(
                 "id",
                 "name",
-                "address",
+                "city",
                 "image",
                 "department_id",
                 DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
@@ -229,21 +229,21 @@ class ApiController extends Controller
             'id' => 'required',
             'motto' => 'required|string|max:50',
         ]);
-    
+
         // Find the doctor by ID
         $doctor = Doctors::find($request->id);
-    
+
         if (!$doctor) {
             return response()->json(['error' => 'Doctor not found'], 404);
         }
-    
+
         // Update the motto field
         $doctor->motto = $request->motto;
         $doctor->save();
-    
+
         return response()->json(['message' => 'Motto updated successfully', 'doctor' => $doctor]);
     }
-    
+
 
     public function updateIWillShowYou(Request $request)
     {
@@ -550,37 +550,38 @@ class ApiController extends Controller
 
 
 
-    public function notifyGuidesAboutTrip(Request $request) {
+    public function notifyGuidesAboutTrip(Request $request)
+    {
         $response = ["status" => 0, "msg" => "Validation error", "trip_count" => 0];
-    
+
         // Validate the input
         $validator = Validator::make($request->all(), [
             'id' => 'required|exists:doctors,id',
         ]);
-    
+
         if ($validator->fails()) {
             $response['msg'] = $validator->errors()->first();
         } else {
             $doctorId = $request->input('id');
-    
+
             // Get the doctor's details
             $doctor = Doctors::findOrFail($doctorId);
             $city = $doctor->city;
-    
+
             // Find trip guides with matching destination and not expired end date
             $tripGuides = TripGuide::where('destination', $city)
                 ->where('end_date', '>', Carbon::now())
                 ->get();
-    
+
             // Count the number of trips in the same city
             $tripCount = $tripGuides->count();
             $response['trip_count'] = $tripCount;
-    
+
             if ($tripGuides->isEmpty()) {
                 $response['msg'] = "No active trip guides found for the doctor's city.";
             } else {
                 $notifiedGuides = [];
-    
+
                 // Filter trip guides and send notifications
                 foreach ($tripGuides as $tripGuide) {
                     // Check if the doctor's ID is different from the guide_id of the trip guide
@@ -589,7 +590,7 @@ class ApiController extends Controller
                         // Code to send notification goes here
                         // For example:
                         // Notification::send($doctor, new TripNotification($tripGuide));
-    
+
                         // Collect notified guide details
                         $notifiedGuides[] = [
                             'guide_id' => $tripGuide->guide_id,
@@ -602,7 +603,7 @@ class ApiController extends Controller
                         ];
                     }
                 }
-    
+
                 $response = [
                     "status" => 1,
                     "msg" => "Notifications sent successfully to guides of the doctor's city.",
@@ -611,21 +612,21 @@ class ApiController extends Controller
                 ];
             }
         }
-    
+
         return response()->json($response);
     }
 
-    
+
 
     public function filterdoctor(Request $request)
     {
         $response = array("status" => "0", "register" => "Validation error");
 
-        
+
         // Start building the query
         $query = Doctors::query();
 
-       
+
         if ($request->has('consultation_fees')) {
             $requestedConsultationFees = (double) $request->get('consultation_fees');
 
@@ -641,11 +642,11 @@ class ApiController extends Controller
         if ($request->has('languages')) {
             // Assuming $data is fetched from the database
             $data = Doctors::all(); // Fetch data from your database
-        
+
             $languages = $request->get('languages');
             $wordsToCount = explode(",", $languages);
             $counts = [];
-            
+
             // Count occurrences of each word in the dataset
             foreach ($data as $row) {
                 $words = explode(",", $row->languages); // Assuming 'languages' is the column name
@@ -659,7 +660,7 @@ class ApiController extends Controller
                     }
                 }
             }
-        
+
             // Constructing the query condition based on the counts
             $query->where(function ($query) use ($counts) {
                 foreach ($counts as $word => $count) {
@@ -667,17 +668,17 @@ class ApiController extends Controller
                 }
             });
         }
-        
 
-            
+
+
         if ($request->has('services')) {
             // Assuming $data is fetched from the database
             $data = Doctors::all(); // Fetch data from your database
-        
+
             $service = $request->get('services');
             $wordsToCount = explode(",", $service);
             $counts = [];
-            
+
             // Count occurrences of each word in the dataset
             foreach ($data as $row) {
                 $words = explode(",", $row->services); // Assuming 'services' is the column name
@@ -691,7 +692,7 @@ class ApiController extends Controller
                     }
                 }
             }
-        
+
             // Constructing the query condition based on the counts
             $query->where(function ($query) use ($counts) {
                 foreach ($counts as $word => $count) {
@@ -699,7 +700,7 @@ class ApiController extends Controller
                 }
             });
         }
-          
+
 
 
         // Execute the query
@@ -730,6 +731,44 @@ class ApiController extends Controller
             $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
         } else {
             $response = array("status" => 0, "msg" => "No Result Found");
+        }
+
+        return json_encode($response, JSON_NUMERIC_CHECK);
+    }
+
+    public function deleteDoctor(Request $request)
+    {
+        $response = array("success" => "0", "delete" => "Validation error");
+
+        $rules = [
+            'id' => 'required|exists:doctors,id',
+        ];
+
+        $messages = array(
+            'id.required' => "Doctor ID is required",
+            'id.exists' => "Invalid Doctor ID",
+        );
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        if ($validator->fails()) {
+            $message = '';
+            $messages_l = json_decode(json_encode($validator->messages()), true);
+            foreach ($messages_l as $msg) {
+                $message .= $msg[0] . ", ";
+            }
+            $response['delete'] = $message;
+        } else {
+            // Valid ID, proceed with deletion
+            $doctor = Doctors::find($request->get('id'));
+
+            if ($doctor) {
+                $doctor->delete();
+                $response['success'] = "1";
+                $response['delete'] = "User deleted successfully";
+            } else {
+                $response['delete'] = "User not found";
+            }
         }
 
         return json_encode($response, JSON_NUMERIC_CHECK);
@@ -1249,43 +1288,7 @@ class ApiController extends Controller
 
     }
 
-    public function deleteDoctor(Request $request)
-    {
-        $response = array("success" => "0", "delete" => "Validation error");
 
-        $rules = [
-            'id' => 'required|exists:doctors,id',
-        ];
-
-        $messages = array(
-            'id.required' => "Doctor ID is required",
-            'id.exists' => "Invalid Doctor ID",
-        );
-
-        $validator = Validator::make($request->all(), $rules, $messages);
-
-        if ($validator->fails()) {
-            $message = '';
-            $messages_l = json_decode(json_encode($validator->messages()), true);
-            foreach ($messages_l as $msg) {
-                $message .= $msg[0] . ", ";
-            }
-            $response['delete'] = $message;
-        } else {
-            // Valid ID, proceed with deletion
-            $doctor = Doctors::find($request->get('id'));
-
-            if ($doctor) {
-                $doctor->delete();
-                $response['success'] = "1";
-                $response['delete'] = "User deleted successfully";
-            } else {
-                $response['delete'] = "User not found";
-            }
-        }
-
-        return json_encode($response, JSON_NUMERIC_CHECK);
-    }
 
 
     public function getspeciality()

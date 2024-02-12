@@ -21,8 +21,8 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
-Route::any("notifyGuidesAboutTrip", [ApiController::class, "notifyGuidesAboutTrip"]);
 
+Route::any("notifyGuidesAboutTrip", [ApiController::class, "notifyGuidesAboutTrip"]);
 Route::any("updateMotto", [ApiController::class, "updateMotto"]);
 Route::any("updateIWillShowYou", [ApiController::class, "updateIWillShowYou"]);
 Route::any("updateConsultationFees", [ApiController::class, "updateConsultationFees"]);
@@ -41,23 +41,21 @@ Route::any("getCity", [ApiController::class, "getCity"]);
 Route::any("getGender", [ApiController::class, "getGender"]);
 Route::any("getServices", [ApiController::class, "getServices"]);
 Route::any("getLanguages", [ApiController::class, "getLanguages"]);
-
-
-
-
-
-
-
 Route::any("filterdoctor", [ApiController::class, "filterdoctor"]);
+Route::any("deletedoctor", [ApiController::class, "deleteDoctor"]);
+
+
+
+
+
+
 Route::any("nearbydoctor", [ApiController::class, "nearbydoctor"]);
 Route::any("register", [ApiController::class, "postregisterpatient"]);
 Route::any("registernew", [ApiController::class, "postregisterpatient"]);
 Route::any("user_reject_appointment", [ApiController::class, "user_reject_appointment"]);
-
 Route::any("savetoken", [ApiController::class, "storetoken"]);
 Route::any("login", [ApiController::class, "showlogin"]);
 Route::any("doctorregister", [ApiController::class, "doctorregister"]);
-Route::any("deletedoctor", [ApiController::class, "deleteDoctor"]);
 Route::any("doctorlogin", [ApiController::class, "doctorlogin"]);
 Route::any("getspeciality", [ApiController::class, "getspeciality"]);
 Route::any("bookappointment", [ApiController::class, "bookappointment"]);
@@ -85,23 +83,15 @@ Route::get("getholiday", [ApiController::class, "getholiday"]);
 Route::any("saveholiday", [ApiController::class, "saveholiday"]);
 Route::get("deleteholiday", [ApiController::class, "deleteholiday"]);
 Route::get("checkholiday", [ApiController::class, "checkholiday"]);
-
 Route::get("get_all_doctor", [ApiController::class, "get_all_doctor"]);
-
 Route::get("get_subscription_list", [ApiController::class, "get_subscription_list"]);
-
 Route::post("place_subscription", [ApiController::class, "place_subscription"]);
-
 Route::any("subscription_upload", [ApiController::class, "subscription_upload"]);
-
 Route::any("mediaupload", [ApiController::class, "mediaupload"]);
 Route::any("doctor_subscription_list", [ApiController::class, "doctor_subscription_list"]);
 Route::any("change_password_doctor", [ApiController::class, "change_password_doctor"]);
-
 Route::any("bannerlist", [ApiController::class, "banner_list"]);
-
 Route::any("income_report", [ApiController::class, "income_report"]);
-
 Route::any("data_list", [ApiController::class, "data_list"]);
 Route::any("about", [ApiController::class, "about"]);
 Route::any("privecy", [ApiController::class, "privecy"]);
