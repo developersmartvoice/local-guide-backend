@@ -24,6 +24,7 @@ Route::any("updateSendOffer", [ApiController::class, "updateSendOffer"]);
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
 
+Route::any("notifyGuidesAboutTrip", [ApiController::class, "notifyGuidesAboutTrip"]);
 Route::any("updateMotto", [ApiController::class, "updateMotto"]);
 Route::any("updateIWillShowYou", [ApiController::class, "updateIWillShowYou"]);
 Route::any("updateConsultationFees", [ApiController::class, "updateConsultationFees"]);
