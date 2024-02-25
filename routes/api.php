@@ -20,6 +20,7 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 });
 
 Route::any("updateSendOffer", [ApiController::class, "updateSendOffer"]);
+Route::any("getSendOffers", [ApiController::class, "getSendOffers"]);
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
