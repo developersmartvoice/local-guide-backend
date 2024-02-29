@@ -2652,6 +2652,79 @@ class ApiController extends Controller
 
 
 
+
+    public function getRecipients(Request $request)
+    {
+        // Initialize the $message variable
+        $message = '';
+
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|string', // Adjusted validation rule for ID
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'results' => []], 400);
+        }
+
+        $userId = $request->input('id');
+
+        // Check if the user ID exists as a sender or recipient in any SendOffer record
+        $senderOffers = SendOffer::where('sender_id', $userId)->orWhere('recipient_id', $userId)->get();
+
+        $results = [];
+
+        // Check if any sender or recipient offers exist
+        if ($senderOffers->isEmpty()) {
+            // User is neither sender nor recipient
+            $message = 'User is neither sender nor recipient';
+            return response()->json(['success' => false, 'message' => $message, 'results' => []], 404);
+        }
+
+        // Process sender and recipient information
+        foreach ($senderOffers as $offer) {
+            $isSender = $offer->sender_id == $userId;
+            $isRecipient = $offer->recipient_id == $userId;
+
+            $role = '';
+            if ($isSender && $isRecipient) {
+                // $message = 'User is both sender and recipient';
+                $role = 'Sender and Recipient';
+            } elseif ($isSender) {
+                // $message = 'User is sender';
+                $role = 'Sender';
+            } elseif ($isRecipient) {
+                // $message = 'User and recipient';
+                $role = 'Recipient';
+            }
+
+            $results[] = [
+                'data' => [
+                    'role' => $role,
+                    'name' => Doctors::find($userId)->name,
+                    'uid' => $userId,
+                    'connectycube_user_id' => Doctors::find($userId)->connectycube_user_id,
+                    'device_token' => TokenData::where('doctor_id', $userId)->get(['token', 'type'])->toArray(),
+                    'recipient_image' => $isSender ? asset('public/upload/doctors') . '/' . Doctors::find($offer->recipient_id)->image : null,
+                    'sender_image' => $isRecipient ? asset('public/upload/doctors') . '/' . Doctors::find($offer->sender_id)->image : null,
+                    'details' => $offer->toArray(),
+                ],
+            ];
+        }
+
+        return response()->json(['success' => true, 'message' => $message, 'results' => $results]);
+    }
+
+
+
+
+
+
+
+
+
+
     public function doctoreditprofile(Request $request)
     {
         // Log::info('Received request:', $request->all());
