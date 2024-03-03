@@ -2573,85 +2573,49 @@ class ApiController extends Controller
         $userId = $request->input('id');
 
         // Check if the user ID exists as a sender in any SendOffer record
-        $senderOffer = SendOffer::where('sender_id', $userId)->first();
+        $senderOffers = SendOffer::where('sender_id', $userId)->get();
 
-        // Check if the user ID exists as a recipient in any SendOffer record
-        $recipientOffer = SendOffer::where('recipient_id', $userId)->first();
-
-        $data_for_chat = [];
-        $data_for_show = [];
-
-        if ($senderOffer && $recipientOffer) {
-            // User is both sender and recipient
-            $message = 'User is both sender and recipient';
-
-            // Retrieve the trip_id from the senderOffer (assuming it's the same as the recipientOffer)
-            $tripId = $senderOffer->trip_id;
-
-            // Check if the user is a recipient based on the trip_id and guide_id match
-            $isRecipient = TripGuide::where('id', $tripId)->where('guide_id', $userId)->exists();
-
-            if ($isRecipient) {
-                $message = 'User is Recipent';
-                // User is recipient
-                $data_for_chat['name'] = Doctors::find($userId)->name;
-                $data_for_chat['uid'] = $userId;
-                $data_for_chat['connectycube_user_id'] = Doctors::find($userId)->connectycube_user_id;
-                $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
-                $data_for_chat['device_token'] = $tokenData->toArray();
-                $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-                $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->sender_id)->image;
-
-                // Fetch all details for recipient
-                $data_for_show = $recipientOffer->toArray();
-            } else {
-                $message = 'User is Sender';
-                // User is only sender
-                $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
-                $data_for_chat['uid'] = $senderOffer->recipient_id;
-                $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
-                $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
-                $data_for_chat['device_token'] = $tokenData->toArray();
-                $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
-                $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-
-                $data_for_show = $senderOffer->toArray();
-            }
-        } elseif ($senderOffer) {
-            $message = 'User is Sender';
-            // User is only sender
-            $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
-            $data_for_chat['uid'] = $senderOffer->recipient_id;
-            $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
-            $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
-            $data_for_chat['device_token'] = $tokenData->toArray();
-            $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
-            $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-
-            $data_for_show = $senderOffer->toArray();
-        } elseif ($recipientOffer) {
-            $message = 'User is Recipent';
-            // User is only recipient
-            $data_for_chat['name'] = Doctors::find($recipientOffer->sender_id)->name;
-            $data_for_chat['uid'] = $recipientOffer->sender_id;
-            $data_for_chat['connectycube_user_id'] = Doctors::find($recipientOffer->sender_id)->connectycube_user_id;
-            $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
-            $data_for_chat['device_token'] = $tokenData->toArray();
-            $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-            $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($recipientOffer->sender_id)->image;
-
-            // Fetch all details for recipient
-            $data_for_show = $recipientOffer->toArray();
-        } else {
-            // User is neither sender nor recipient
-            return response()->json(['success' => false, 'message' => 'User is neither sender nor recipient', 'data_for_chat' => null, 'data_for_show' => null], 404);
+        if ($senderOffers->isEmpty()) {
+            // User is not a sender
+            return response()->json(['success' => false, 'message' => 'User is not a sender', 'data_for_chat' => null, 'data_for_show' => null], 404);
         }
 
-        return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $data_for_chat, 'data_for_show' => $data_for_show]);
+        // User is sender
+        $message = 'User is Sender';
+
+        $data_for_show = [];
+        $recipientDetails = [];
+
+        foreach ($senderOffers as $offer) {
+            // Retrieve recipient details for each offer
+
+            $recipientId = $offer->recipient_id;
+            $recipient = Doctors::find($recipientId);
+            $recipientTokenData = TokenData::where('doctor_id', $recipientId)->get(['token', 'type']); // Adjusted column name
+
+            // Construct data for chat
+            $data_for_chat = [
+                'name' => $recipient->name,
+                'uid' => $recipientId,
+                'connectycube_user_id' => $recipient->connectycube_user_id,
+                'device_token' => $recipientTokenData->toArray(),
+                'recipient_image' => asset('public/upload/doctors') . '/' . Doctors::find($recipientId)->image,
+                'sender_image' => asset('public/upload/doctors') . '/' . Doctors::find($userId)->image,
+            ];
+
+            // Fetch all details for sender for each offer
+            $recipientDetails[] = $data_for_chat;
+
+            $offerDetails = $offer->toArray();
+            $offerDetails['recipient_name'] = $recipient->name; // Include recipient's name in offer details
+            $data_for_show[] = $offerDetails;
+        }
+
+        return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $recipientDetails, 'data_for_show' => $data_for_show]);
     }
 
 
-
+    
 
     public function getRecipients(Request $request)
     {
@@ -2665,56 +2629,223 @@ class ApiController extends Controller
 
         // If validation fails, return error response
         if ($validator->fails()) {
-            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'results' => []], 400);
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'data_for_chat' => null, 'data_for_show' => null], 400);
         }
 
         $userId = $request->input('id');
 
-        // Check if the user ID exists as a sender or recipient in any SendOffer record
-        $senderOffers = SendOffer::where('sender_id', $userId)->orWhere('recipient_id', $userId)->get();
+        // Check if the user ID exists as a recipient in any SendOffer record
+        $recipientOffers = SendOffer::where('recipient_id', $userId)->get();
 
-        $results = [];
-
-        // Check if any sender or recipient offers exist
-        if ($senderOffers->isEmpty()) {
-            // User is neither sender nor recipient
-            $message = 'User is neither sender nor recipient';
-            return response()->json(['success' => false, 'message' => $message, 'results' => []], 404);
+        if ($recipientOffers->isEmpty()) {
+            // User is not a recipient
+            return response()->json(['success' => false, 'message' => 'User is not a recipient', 'data_for_chat' => null, 'data_for_show' => null], 404);
         }
 
-        // Process sender and recipient information
-        foreach ($senderOffers as $offer) {
-            $isSender = $offer->sender_id == $userId;
-            $isRecipient = $offer->recipient_id == $userId;
+        // User is recipient
+        $message = 'User is Recipient';
 
-            $role = '';
-            if ($isSender && $isRecipient) {
-                // $message = 'User is both sender and recipient';
-                $role = 'Sender and Recipient';
-            } elseif ($isSender) {
-                // $message = 'User is sender';
-                $role = 'Sender';
-            } elseif ($isRecipient) {
-                // $message = 'User and recipient';
-                $role = 'Recipient';
-            }
+        $data_for_show = [];
+        $senderDetails = [];
 
-            $results[] = [
-                'data' => [
-                    'role' => $role,
-                    'name' => Doctors::find($userId)->name,
-                    'uid' => $userId,
-                    'connectycube_user_id' => Doctors::find($userId)->connectycube_user_id,
-                    'device_token' => TokenData::where('doctor_id', $userId)->get(['token', 'type'])->toArray(),
-                    'recipient_image' => $isSender ? asset('public/upload/doctors') . '/' . Doctors::find($offer->recipient_id)->image : null,
-                    'sender_image' => $isRecipient ? asset('public/upload/doctors') . '/' . Doctors::find($offer->sender_id)->image : null,
-                    'details' => $offer->toArray(),
-                ],
+        foreach ($recipientOffers as $offer) {
+            // Retrieve sender details for each offer
+
+            $sender = Doctors::find($offer->sender_id);
+
+            $senderId = $offer->sender_id;
+            $sender = Doctors::find($senderId);
+            $senderTokenData = TokenData::where('doctor_id', $senderId)->get(['token', 'type']); // Adjusted column name
+
+            // Construct data for chat
+            $data_for_chat = [
+                'name' => $sender->name,
+                'uid' => $senderId,
+                'connectycube_user_id' => $sender->connectycube_user_id,
+                'device_token' => $senderTokenData->toArray(),
+                'recipient_image' => asset('public/upload/doctors') . '/' . Doctors::find($userId)->image,
+                'sender_image' => asset('public/upload/doctors') . '/' . $sender->image,
             ];
+
+            // Fetch all details for recipient for each offer
+            // $data_for_show[] = $offer->toArray();
+            $senderDetails[] = $data_for_chat;
+
+            $offerDetails = $offer->toArray();
+            $offerDetails['sender_name'] = $sender->name; // Include sender's name in offer details
+            $data_for_show[] = $offerDetails;
         }
 
-        return response()->json(['success' => true, 'message' => $message, 'results' => $results]);
+        return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $senderDetails, 'data_for_show' => $data_for_show]);
     }
+
+
+
+
+
+
+
+
+    // public function getSendOffers(Request $request)
+    // {
+    //     // Initialize the $message variable
+    //     $message = '';
+
+    //     // Validate the incoming request data
+    //     $validator = Validator::make($request->all(), [
+    //         'id' => 'required|integer|string', // Adjusted validation rule for ID
+    //     ]);
+
+    //     // If validation fails, return error response
+    //     if ($validator->fails()) {
+    //         return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'data_for_chat' => null, 'data_for_show' => null], 400);
+    //     }
+
+    //     $userId = $request->input('id');
+
+    //     // Check if the user ID exists as a sender in any SendOffer record
+    //     $senderOffer = SendOffer::where('sender_id', $userId)->first();
+
+    //     // Check if the user ID exists as a recipient in any SendOffer record
+    //     $recipientOffer = SendOffer::where('recipient_id', $userId)->first();
+
+    //     $data_for_chat = [];
+    //     $data_for_show = [];
+
+    //     if ($senderOffer && $recipientOffer) {
+    //         // User is both sender and recipient
+    //         $message = 'User is both sender and recipient';
+
+    //         // Retrieve the trip_id from the senderOffer (assuming it's the same as the recipientOffer)
+    //         $tripId = $senderOffer->trip_id;
+
+    //         // Check if the user is a recipient based on the trip_id and guide_id match
+    //         $isRecipient = TripGuide::where('id', $tripId)->where('guide_id', $userId)->exists();
+
+    //         if ($isRecipient) {
+    //             $message = 'User is Recipent';
+    //             // User is recipient
+    //             $data_for_chat['name'] = Doctors::find($userId)->name;
+    //             $data_for_chat['uid'] = $userId;
+    //             $data_for_chat['connectycube_user_id'] = Doctors::find($userId)->connectycube_user_id;
+    //             $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
+    //             $data_for_chat['device_token'] = $tokenData->toArray();
+    //             $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
+    //             $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->sender_id)->image;
+
+    //             // Fetch all details for recipient
+    //             $data_for_show = $recipientOffer->toArray();
+    //         } else {
+    //             $message = 'User is Sender';
+    //             // User is only sender
+    //             $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
+    //             $data_for_chat['uid'] = $senderOffer->recipient_id;
+    //             $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
+    //             $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
+    //             $data_for_chat['device_token'] = $tokenData->toArray();
+    //             $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
+    //             $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
+
+    //             $data_for_show = $senderOffer->toArray();
+    //         }
+    //     } elseif ($senderOffer) {
+    //         $message = 'User is Sender';
+    //         // User is only sender
+    //         $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
+    //         $data_for_chat['uid'] = $senderOffer->recipient_id;
+    //         $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
+    //         $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
+    //         $data_for_chat['device_token'] = $tokenData->toArray();
+    //         $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
+    //         $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
+
+    //         $data_for_show = $senderOffer->toArray();
+    //     } elseif ($recipientOffer) {
+    //         $message = 'User is Recipent';
+    //         // User is only recipient
+    //         $data_for_chat['name'] = Doctors::find($recipientOffer->sender_id)->name;
+    //         $data_for_chat['uid'] = $recipientOffer->sender_id;
+    //         $data_for_chat['connectycube_user_id'] = Doctors::find($recipientOffer->sender_id)->connectycube_user_id;
+    //         $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
+    //         $data_for_chat['device_token'] = $tokenData->toArray();
+    //         $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
+    //         $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($recipientOffer->sender_id)->image;
+
+    //         // Fetch all details for recipient
+    //         $data_for_show = $recipientOffer->toArray();
+    //     } else {
+    //         // User is neither sender nor recipient
+    //         return response()->json(['success' => false, 'message' => 'User is neither sender nor recipient', 'data_for_chat' => null, 'data_for_show' => null], 404);
+    //     }
+
+    //     return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $data_for_chat, 'data_for_show' => $data_for_show]);
+    // }
+
+
+
+
+    // public function getRecipients(Request $request)
+    // {
+    //     // Initialize the $message variable
+    //     $message = '';
+
+    //     // Validate the incoming request data
+    //     $validator = Validator::make($request->all(), [
+    //         'id' => 'required|integer|string', // Adjusted validation rule for ID
+    //     ]);
+
+    //     // If validation fails, return error response
+    //     if ($validator->fails()) {
+    //         return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'results' => []], 400);
+    //     }
+
+    //     $userId = $request->input('id');
+
+    //     // Check if the user ID exists as a sender or recipient in any SendOffer record
+    //     $senderOffers = SendOffer::where('sender_id', $userId)->orWhere('recipient_id', $userId)->get();
+
+    //     $results = [];
+
+    //     // Check if any sender or recipient offers exist
+    //     if ($senderOffers->isEmpty()) {
+    //         // User is neither sender nor recipient
+    //         $message = 'User is neither sender nor recipient';
+    //         return response()->json(['success' => false, 'message' => $message, 'results' => []], 404);
+    //     }
+
+    //     // Process sender and recipient information
+    //     foreach ($senderOffers as $offer) {
+    //         $isSender = $offer->sender_id == $userId;
+    //         $isRecipient = $offer->recipient_id == $userId;
+
+    //         $role = '';
+    //         if ($isSender && $isRecipient) {
+    //             // $message = 'User is both sender and recipient';
+    //             $role = 'Sender and Recipient';
+    //         } elseif ($isSender) {
+    //             // $message = 'User is sender';
+    //             $role = 'Sender';
+    //         } elseif ($isRecipient) {
+    //             // $message = 'User and recipient';
+    //             $role = 'Recipient';
+    //         }
+
+    //         $results[] = [
+    //             'data' => [
+    //                 'role' => $role,
+    //                 'name' => Doctors::find($userId)->name,
+    //                 'uid' => $userId,
+    //                 'connectycube_user_id' => Doctors::find($userId)->connectycube_user_id,
+    //                 'device_token' => TokenData::where('doctor_id', $userId)->get(['token', 'type'])->toArray(),
+    //                 'recipient_image' => $isSender ? asset('public/upload/doctors') . '/' . Doctors::find($offer->recipient_id)->image : null,
+    //                 'sender_image' => $isRecipient ? asset('public/upload/doctors') . '/' . Doctors::find($offer->sender_id)->image : null,
+    //                 'details' => $offer->toArray(),
+    //             ],
+    //         ];
+    //     }
+
+    //     return response()->json(['success' => true, 'message' => $message, 'results' => $results]);
+    // }
 
 
 
