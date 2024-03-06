@@ -561,6 +561,46 @@ class ApiController extends Controller
     }
 
 
+
+    public function updateCurrency(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'currency' => 'nullable|string', // Assuming currency can be updated to null or a string value
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the currency field
+        $doctor->currency = $request->currency;
+        $doctor->save();
+
+        return response()->json(['message' => 'Currency updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function getCurrency(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's currency
+        return response()->json([
+            'message' => 'Currency retrieved successfully',
+            'currency' => $doctor->currency
+        ]);
+    }
+
+
     public function getName(Request $request)
     {
         $request->validate([
@@ -2555,6 +2595,8 @@ class ApiController extends Controller
 
     // use App\Models\TokenData;
 
+
+
     public function getSendOffers(Request $request)
     {
         // Initialize the $message variable
@@ -2593,6 +2635,12 @@ class ApiController extends Controller
             $recipient = Doctors::find($recipientId);
             $recipientTokenData = TokenData::where('doctor_id', $recipientId)->get(['token', 'type']); // Adjusted column name
 
+            // Fetch the trip ID from the offer
+            $tripId = $offer->trip_id;
+
+            // Retrieve destination from trip_guides table using trip ID
+            $tripGuide = TripGuide::where('id', $tripId)->first(); // Assuming there's a model named TripGuide
+
             // Construct data for chat
             $data_for_chat = [
                 'name' => $recipient->name,
@@ -2608,14 +2656,13 @@ class ApiController extends Controller
 
             $offerDetails = $offer->toArray();
             $offerDetails['recipient_name'] = $recipient->name; // Include recipient's name in offer details
+            $offerDetails['destination'] = $tripGuide->destination; // Include destination
             $data_for_show[] = $offerDetails;
         }
 
         return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $recipientDetails, 'data_for_show' => $data_for_show]);
     }
 
-
-    
 
     public function getRecipients(Request $request)
     {
@@ -2651,11 +2698,15 @@ class ApiController extends Controller
         foreach ($recipientOffers as $offer) {
             // Retrieve sender details for each offer
 
-            $sender = Doctors::find($offer->sender_id);
-
             $senderId = $offer->sender_id;
             $sender = Doctors::find($senderId);
             $senderTokenData = TokenData::where('doctor_id', $senderId)->get(['token', 'type']); // Adjusted column name
+
+            // Fetch the trip ID from the offer
+            $tripId = $offer->trip_id;
+
+            // Retrieve destination from trip_guides table using trip ID
+            $tripGuide = TripGuide::where('id', $tripId)->first(); // Assuming there's a model named TripGuide
 
             // Construct data for chat
             $data_for_chat = [
@@ -2668,21 +2719,16 @@ class ApiController extends Controller
             ];
 
             // Fetch all details for recipient for each offer
-            // $data_for_show[] = $offer->toArray();
             $senderDetails[] = $data_for_chat;
 
             $offerDetails = $offer->toArray();
             $offerDetails['sender_name'] = $sender->name; // Include sender's name in offer details
+            $offerDetails['destination'] = $tripGuide->destination; // Include destination
             $data_for_show[] = $offerDetails;
         }
 
         return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $senderDetails, 'data_for_show' => $data_for_show]);
     }
-
-
-
-
-
 
 
 
