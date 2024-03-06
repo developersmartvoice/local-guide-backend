@@ -38,8 +38,11 @@ Route::any("updateCity", [ApiController::class, "updateCity"]);
 Route::any("updateGender", [ApiController::class, "updateGender"]);
 Route::any("updateServices", [ApiController::class, "updateServices"]);
 Route::any("updateLanguages", [ApiController::class, "updateLanguages"]);
+Route::any("updateCurrency", [ApiController::class, "updateCurrency"]);
 
 
+
+Route::any("getCurrency", [ApiController::class, "getCurrency"]);
 Route::any("getName", [ApiController::class, "getName"]);
 Route::any("getEmail", [ApiController::class, "getEmail"]);
 Route::any("getPhoneNo", [ApiController::class, "getPhoneNo"]);
