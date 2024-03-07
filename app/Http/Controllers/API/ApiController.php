@@ -562,6 +562,46 @@ class ApiController extends Controller
     }
 
 
+
+    public function updateCurrency(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'id' => 'required',
+            'currency' => 'nullable|string', // Assuming currency can be updated to null or a string value
+        ]);
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->id);
+
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Update the currency field
+        $doctor->currency = $request->currency;
+        $doctor->save();
+
+        return response()->json(['message' => 'Currency updated successfully', 'doctor' => $doctor]);
+    }
+
+
+    public function getCurrency(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->id); // Find the doctor by ID
+
+        // Return the doctor's currency
+        return response()->json([
+            'message' => 'Currency retrieved successfully',
+            'currency' => $doctor->currency
+        ]);
+    }
+
+
     public function getName(Request $request)
     {
         $request->validate([
@@ -1629,6 +1669,157 @@ class ApiController extends Controller
 
     }
 
+
+
+    public function updateImage(Request $request)
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'doctor_id' => 'required|exists:doctors,id',
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->doctor_id);
+
+        // If doctor not found, return error response
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $image = $request->file('image');
+            $imageName = time() . '.' . $image->getClientOriginalExtension();
+            $image->move(public_path('upload/doctors'), $imageName);
+            $doctor->image = $imageName;
+            $doctor->save();
+
+            return response()->json(['success' => true, 'message' => 'Image updated successfully', 'img' => $request], 200);
+        }
+
+        return response()->json(['error' => 'No image provided'], 400);
+    }
+
+
+    public function updateImages(Request $request)
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'doctor_id' => 'required|exists:doctors,id',
+            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->doctor_id);
+
+        // If doctor not found, return error response
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Handle image upload
+        $files = $request->file('images');
+
+        if (!is_array($files)) {
+            $files = [$files]; // Convert to array if not already
+        }
+        $uploadedImagePaths = [];
+        if ($request->hasFile('images')) {
+
+            if (!is_array($request)) {
+                $request = [$request]; // Convert to array if not already
+            }
+
+            foreach ($request->file('images') as $file) {
+                $extension = $file->getClientOriginalExtension() ?: 'png';
+                $folderName = '/upload/doctors/';
+                $picture = time() . '_' . uniqid() . '.' . $extension;
+                $destinationPath = public_path($folderName);
+                $file->move($destinationPath, $picture);
+                $uploadedImagePaths[] = $folderName . $picture; // Save the complete path
+            }
+            // Update 'images' field in the database
+            $doctor->images = json_encode($uploadedImagePaths);
+            $doctor->save();
+
+            return response()->json(['success' => true, 'message' => 'Images updated successfully 444', 'img' => $uploadedImagePaths], 200);
+        }
+        $doctor->images = null;
+        $doctor->save();
+        return response()->json(['success' => true, 'message' => 'Images not uploaded'], 200);
+    }
+
+
+
+
+    public function getImage(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->doctor_id); // Find the doctor by ID
+
+        // Modify the image URL based on your actual storage path
+        $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
+
+        // Return the doctor's image URL
+        return response()->json([
+            'success' => true,
+            'message' => 'Doctor image retrieved successfully',
+            'image_url' => $imageURL
+        ]);
+    }
+
+
+    public function getImages(Request $request)
+    {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id' // Ensure that the provided ID exists in the 'doctors' table
+        ]);
+
+        $doctor = Doctors::findOrFail($request->doctor_id); // Find the doctor by ID
+
+        $imageURLs = [];
+
+        // Assuming images field is stored as JSON array
+        $images = json_decode($doctor->images);
+
+        // Check if images field is not empty and is an array
+        if (!empty($images) && is_array($images)) {
+            // Iterate over each image filename and construct the image URLs
+            foreach ($images as $image) {
+                $imageURLs[] = asset('public/upload/doctors') . '/' . $image;
+            }
+        }
+
+        // Return the doctor's image URLs as a list
+        return response()->json([
+            'success' => true,
+            'message' => 'Doctor images retrieved successfully',
+            'image_urls' => $imageURLs
+        ]);
+    }
+
     public function viewdoctor(Request $request)
     {
         $response = array("success" => "0", "register" => "Validation error");
@@ -2556,6 +2747,8 @@ class ApiController extends Controller
 
     // use App\Models\TokenData;
 
+
+
     public function getSendOffers(Request $request)
     {
         // Initialize the $message variable
@@ -2594,6 +2787,12 @@ class ApiController extends Controller
             $recipient = Doctors::find($recipientId);
             $recipientTokenData = TokenData::where('doctor_id', $recipientId)->get(['token', 'type']); // Adjusted column name
 
+            // Fetch the trip ID from the offer
+            $tripId = $offer->trip_id;
+
+            // Retrieve destination from trip_guides table using trip ID
+            $tripGuide = TripGuide::where('id', $tripId)->first(); // Assuming there's a model named TripGuide
+
             // Construct data for chat
             $data_for_chat = [
                 'name' => $recipient->name,
@@ -2609,14 +2808,13 @@ class ApiController extends Controller
 
             $offerDetails = $offer->toArray();
             $offerDetails['recipient_name'] = $recipient->name; // Include recipient's name in offer details
+            $offerDetails['destination'] = $tripGuide->destination; // Include destination
             $data_for_show[] = $offerDetails;
         }
 
         return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $recipientDetails, 'data_for_show' => $data_for_show]);
     }
 
-
-    
 
     public function getRecipients(Request $request)
     {
@@ -2652,11 +2850,15 @@ class ApiController extends Controller
         foreach ($recipientOffers as $offer) {
             // Retrieve sender details for each offer
 
-            $sender = Doctors::find($offer->sender_id);
-
             $senderId = $offer->sender_id;
             $sender = Doctors::find($senderId);
             $senderTokenData = TokenData::where('doctor_id', $senderId)->get(['token', 'type']); // Adjusted column name
+
+            // Fetch the trip ID from the offer
+            $tripId = $offer->trip_id;
+
+            // Retrieve destination from trip_guides table using trip ID
+            $tripGuide = TripGuide::where('id', $tripId)->first(); // Assuming there's a model named TripGuide
 
             // Construct data for chat
             $data_for_chat = [
@@ -2669,21 +2871,16 @@ class ApiController extends Controller
             ];
 
             // Fetch all details for recipient for each offer
-            // $data_for_show[] = $offer->toArray();
             $senderDetails[] = $data_for_chat;
 
             $offerDetails = $offer->toArray();
             $offerDetails['sender_name'] = $sender->name; // Include sender's name in offer details
+            $offerDetails['destination'] = $tripGuide->destination; // Include destination
             $data_for_show[] = $offerDetails;
         }
 
         return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $senderDetails, 'data_for_show' => $data_for_show]);
     }
-
-
-
-
-
 
 
 

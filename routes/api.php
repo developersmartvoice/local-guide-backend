@@ -38,8 +38,11 @@ Route::any("updateCity", [ApiController::class, "updateCity"]);
 Route::any("updateGender", [ApiController::class, "updateGender"]);
 Route::any("updateServices", [ApiController::class, "updateServices"]);
 Route::any("updateLanguages", [ApiController::class, "updateLanguages"]);
+Route::any("updateCurrency", [ApiController::class, "updateCurrency"]);
 
 
+
+Route::any("getCurrency", [ApiController::class, "getCurrency"]);
 Route::any("getName", [ApiController::class, "getName"]);
 Route::any("getEmail", [ApiController::class, "getEmail"]);
 Route::any("getPhoneNo", [ApiController::class, "getPhoneNo"]);
@@ -69,6 +72,10 @@ Route::any("doctorregister", [ApiController::class, "doctorregister"]);
 Route::any("doctorlogin", [ApiController::class, "doctorlogin"]);
 Route::any("getspeciality", [ApiController::class, "getspeciality"]);
 Route::any("bookappointment", [ApiController::class, "bookappointment"]);
+Route::any("updateImage", [ApiController::class, "updateImage"]);
+Route::any("updateImages", [ApiController::class, "updateImages"]);
+Route::any("getImage", [ApiController::class, "getImage"]);
+Route::any("getImages", [ApiController::class, "getImages"]);
 Route::any("viewdoctor", [ApiController::class, "viewdoctor"]);
 Route::any("addreview", [ApiController::class, "addreview"]);
 Route::any("getslot", [ApiController::class, "getslotdata"]);
