@@ -40,12 +40,11 @@
                                              <input type="hidden" name="real_basic_img" id="real_basic_img"
                                                 value="<?= isset($data->image)?$data->image:""?>" />
                                              <?php 
-                                             if(isset($data->image)){
-                                                 $path=asset('public/upload/doctors')."/".$data->image;
-                                             }
-                                             else{
-                                                 $path=asset('public/upload/profile/profile.png');
-                                             }
+                                             if (isset($data->image)) {
+   $path = asset('public/upload/doctors') . "/" . $data->image;
+} else {
+   $path = asset('public/upload/profile/profile.png');
+}
                                              ?>
                                              <img src="{{$path}}" alt="..." class="img-thumbnail imgsize"
                                                 id="basic_img">
@@ -57,6 +56,7 @@
                                  </div>
                               </div>
                            </div>
+                           <!-- ///////////////////////////////////////////////////////////// -->
                            <div class="col-lg-4">
                               <div class="form-group">
                                  <div class="mar20">
@@ -89,13 +89,13 @@
                                  </div>
                               </div>
                            </div>
-
+<!-- /////////////////////////////////////////////////////////////// -->
                         </div>
                         <div class="col-lg-4">
                            <div class="form-group">
                               <label for="name">{{__("message.Name")}}<span class="reqfield">*</span></label>
                               <input type="text" class="form-control" placeholder='{{__("message.Enter Doctor Name")}}'
-                                 id="name" name="name" required="" value="{{isset($data->name)?$data->name:''}}">
+                                 id="name" name="name" required="" value="{{isset($data->name) ? $data->name : ''}}">
                            </div>
                            <div class="form-group">
                               <label for="department_id">{{__("message.specialities")}}<span
@@ -115,7 +115,7 @@
                               <label for="password">{{__("message.Password")}}<span class="reqfield">*</span></label>
                               <input type="password" class="form-control" id="password"
                                  placeholder='{{__("message.Enter password")}}' name="password" required=""
-                                 value="{{isset($data->password)?$data->password:''}}">
+                                 value="{{isset($data->password) ? $data->password : ''}}">
                            </div>
                         </div>
                   </div>
@@ -126,7 +126,7 @@
                   <div class="form-group">
                      <label for="phoneno">{{__("message.Phone")}}<span class="reqfield">*</span></label>
                      <input type="text" class="form-control" id="phoneno" placeholder='{{__("message.Enter Phone")}}'
-                        name="phoneno" required="" value="{{isset($data->phoneno)?$data->phoneno:''}}">
+                        name="phoneno" required="" value="{{isset($data->phoneno) ? $data->phoneno : ''}}">
                   </div>
                </div>
                <div class="col-lg-4">
@@ -135,7 +135,7 @@
                      <input type="email" class="form-control" id="email"
                         placeholder='{{__("message.Enter Email Address")}}' name="email" required=""
                         <?=isset($id)&&$id!=0?'readonly':""?>
-                     value="{{isset($data->email)?$data->email:''}}">
+                     value="{{isset($data->email) ? $data->email : ''}}">
                   </div>
                </div>
                <div class="col-lg-4">
@@ -143,7 +143,7 @@
                      <label for="email">{{__("message.Working Time")}}<span class="reqfield">*</span></label>
                      <input type="text" class="form-control" id="working_time"
                         placeholder='{{__("message.Enter Working Time")}}' name="working_time" required=""
-                        value="{{isset($data->working_time)?$data->working_time:''}}">
+                        value="{{isset($data->working_time) ? $data->working_time : ''}}">
                   </div>
                </div>
             </div>
@@ -152,14 +152,14 @@
                   <div class="form-group">
                      <label for="aboutus">{{__("message.consultation_fees")}}<span class="reqfield">*</span></label>
                      <input type="number" required name="consultation_fees"
-                        value="{{isset($data->consultation_fees)?$data->consultation_fees:''}}" class="form-control"
+                        value="{{isset($data->consultation_fees) ? $data->consultation_fees : ''}}" class="form-control"
                         id="consultation_fees" min="1" step="0.01">
                   </div>
                </div>
                <div class="col-lg-3">
                   <div class="form-group">
                      <label for="city">{{__("City")}}<span class="reqfield">*</span></label>
-                     <input type="text" required name="city" value="{{isset($data->city)?$data->city:''}}"
+                     <input type="text" required name="city" value="{{isset($data->city) ? $data->city : ''}}"
                         class="form-control">
                   </div>
                </div>
@@ -168,7 +168,7 @@
                      <label>{{__("Gender")}}<span class="reqfield">*</span></label>
                      <div class="form-check">
                         <input class="form-check-input" type="radio" name="gender" id="genderNone" value="none" {{
-                           isset($data->gender) && $data->gender == 'none' ? 'checked' : ''
+   isset($data->gender) && $data->gender == 'none' ? 'checked' : ''
                         }}>
                         <label class="form-check-label" for="genderNone">
                            None
@@ -176,7 +176,7 @@
                      </div>
                      <div class="form-check">
                         <input class="form-check-input" type="radio" name="gender" id="genderMale" value="male" {{
-                           isset($data->gender) && $data->gender == 'male' ? 'checked' : ''
+   isset($data->gender) && $data->gender == 'male' ? 'checked' : ''
                         }}>
                         <label class="form-check-label" for="genderMale">
                            Male
@@ -184,8 +184,8 @@
                      </div>
                      <div class="form-check">
                         <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="female" {{
-                           isset($data->gender) && $data->gender == 'female' ? 'checked' :
-                        '' }}>
+   isset($data->gender) && $data->gender == 'female' ? 'checked' :
+   '' }}>
                         <label class="form-check-label" for="genderFemale">
                            Female
                         </label>
@@ -199,7 +199,7 @@
                      <label for="aboutus">{{__("message.About Us")}}<span class="reqfield">*</span></label>
                      <textarea id="aboutus" class="form-control" rows="5" name="aboutus"
                         placeholder='{{__("message.Enter About Doctor")}}'
-                        required="">{{isset($data->aboutus)?$data->aboutus:''}}</textarea>
+                        required="">{{isset($data->aboutus) ? $data->aboutus : ''}}</textarea>
                   </div>
                </div>
                <div class="col-lg-6">
@@ -207,7 +207,7 @@
                                  <label for="services">{{__("message.Services")}}<span class="reqfield">*</span></label>
                                  <textarea id="services" class="form-control" rows="5"
                                     placeholder='{{__("message.Enter Description about Services")}}' name="services"
-                                    required="">{{isset($data->services)?$data->services:''}}</textarea>
+                                    required="">{{isset($data->services) ? $data->services : ''}}</textarea>
                               </div> -->
                   <div class="form-group">
                      <label>{{ __("message.Services") }}<span class="reqfield">*</span></label>
@@ -216,67 +216,87 @@
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="translation" name="services[]"
                               value="translation" {{ isset($data->services) &&
-                           in_array('translation',
-                           explode(',', $data->services)) ? 'checked' : '' }}>
+   in_array(
+      'translation',
+      explode(',', $data->services)
+   ) ? 'checked' : '' }}>
                            <label class="form-check-label" for="translation">Translation &
                               Interpretation</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="shopping" name="services[]"
-                              value="shopping" {{ isset($data->services) && in_array('shopping',
-                           explode(',', $data->services)) ? 'checked' : '' }}>
+                              value="shopping" {{ isset($data->services) && in_array(
+   'shopping',
+   explode(',', $data->services)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="shopping">Shopping</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="food" name="services[]" value="food" {{
-                              isset($data->services) && in_array('food', explode(',',
-                           $data->services)) ? 'checked' : '' }}>
+   isset($data->services) && in_array('food', explode(
+      ',',
+      $data->services
+   )
+   ) ? 'checked' : '' }}>
                            <label class="form-check-label" for="food">Food & Restaurants</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="art" name="services[]" value="art" {{
-                              isset($data->services) && in_array('art',
-                           explode(',', $data->services)) ? 'checked' : '' }}>
+   isset($data->services) && in_array(
+      'art',
+      explode(',', $data->services)
+   ) ? 'checked' : '' }}>
                            <label class="form-check-label" for="art">Art & Museums</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="history" name="services[]"
-                              value="history" {{ isset($data->services) && in_array('history', explode(',',
-                           $data->services)) ? 'checked' : '' }}>
+                              value="history" {{ isset($data->services) && in_array('history', explode(
+   ',',
+   $data->services
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="history">History & Culture</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="exploration" name="services[]"
                               value="exploration" {{ isset($data->services)
-                           && in_array('exploration', explode(',', $data->services)) ?
-                           'checked' : '' }}>
+   && in_array('exploration', explode(',', $data->services)) ?
+   'checked' : '' }}>
                            <label class="form-check-label" for="exploration">Exploration &
                               Sightseeing</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="tours" name="services[]" value="pick" {{
-                              isset($data->services) && in_array('pick', explode(',',
-                           $data->services)) ? 'checked' : '' }}>
+   isset($data->services) && in_array('pick', explode(
+      ',',
+      $data->services
+   )
+   ) ? 'checked' : '' }}>
                            <label class="form-check-label" for="tours">Pick up & Driving Tours</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="nightlife" name="services[]"
-                              value="nightlife" {{ isset($data->services) && in_array('nightlife',
-                           explode(',', $data->services)) ? 'checked' : '' }}>
+                              value="nightlife" {{ isset($data->services) && in_array(
+   'nightlife',
+   explode(',', $data->services)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="nightlife">Nightlife & Bars</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="sports" name="services[]" value="sports"
-                              {{ isset($data->services) && in_array('sports', explode(',',
-                           $data->services)) ? 'checked' : '' }}>
+                              {{ isset($data->services) && in_array('sports', explode(
+   ',',
+   $data->services
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="sports">Sports & Recreation</label>
                         </div>
                         <!-- Add more services as needed -->
@@ -291,18 +311,30 @@
                                        class="reqfield">*</span></label>
                                  <select id="languages" class="form-control" name="languages[]" multiple required="">
                                     Add options dynamically from your database or use a predefined list
-                                    <option value="english" {{ isset($data->languages) && in_array('english',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>English</option>
-                                    <option value="bengali" {{ isset($data->languages) && in_array('bengali',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>Bengali</option>
-                                    <option value="hindi" {{ isset($data->languages) && in_array('hindi',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>Hindi</option>
-                                    <option value="urdu" {{ isset($data->languages) && in_array('urdu',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>Urdu</option>
-                                    <option value="french" {{ isset($data->languages) && in_array('french',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>French</option>
-                                    <option value="spanish" {{ isset($data->languages) && in_array('spanish',
-                                       explode(',', $data->languages)) ? 'selected' : '' }}>Spanish</option>
+                                    <option value="english" {{ isset($data->languages) && in_array(
+   'english',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>English</option>
+                                    <option value="bengali" {{ isset($data->languages) && in_array(
+   'bengali',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>Bengali</option>
+                                    <option value="hindi" {{ isset($data->languages) && in_array(
+   'hindi',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>Hindi</option>
+                                    <option value="urdu" {{ isset($data->languages) && in_array(
+   'urdu',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>Urdu</option>
+                                    <option value="french" {{ isset($data->languages) && in_array(
+   'french',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>French</option>
+                                    <option value="spanish" {{ isset($data->languages) && in_array(
+   'spanish',
+   explode(',', $data->languages)
+) ? 'selected' : '' }}>Spanish</option>
                                     Add more languages as needed
                                  </select>
                               </div> -->
@@ -312,43 +344,61 @@
                         <!-- Add options dynamically from your database or use a predefined list -->
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="english" name="languages[]"
-                              value="english" {{ isset($data->languages) && in_array('english', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+                              value="english" {{ isset($data->languages) && in_array('english', explode(
+   ',',
+   $data->languages
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="english">English</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="bengali" name="languages[]"
-                              value="bengali" {{ isset($data->languages) && in_array('bengali', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+                              value="bengali" {{ isset($data->languages) && in_array('bengali', explode(
+   ',',
+   $data->languages
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="bengali">Bengali</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="hindi" name="languages[]" value="hindi"
-                              {{ isset($data->languages) && in_array('hindi', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+                              {{ isset($data->languages) && in_array('hindi', explode(
+   ',',
+   $data->languages
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="hindi">Hindi</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="urdu" name="languages[]" value="urdu" {{
-                              isset($data->languages) && in_array('urdu', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+   isset($data->languages) && in_array('urdu', explode(
+      ',',
+      $data->languages
+   )
+   ) ? 'checked' : '' }}>
                            <label class="form-check-label" for="urdu">Urdu</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="french" name="languages[]" value="french"
-                              {{ isset($data->languages) && in_array('french', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+                              {{ isset($data->languages) && in_array('french', explode(
+   ',',
+   $data->languages
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="french">French</label>
                         </div>
 
                         <div class="form-check">
                            <input type="checkbox" class="form-check-input" id="spanish" name="languages[]"
-                              value="spanish" {{ isset($data->languages) && in_array('spanish', explode(',',
-                           $data->languages)) ? 'checked' : '' }}>
+                              value="spanish" {{ isset($data->languages) && in_array('spanish', explode(
+   ',',
+   $data->languages
+)
+) ? 'checked' : '' }}>
                            <label class="form-check-label" for="spanish">Spanish</label>
                         </div>
                         <!-- Add more languages as needed -->
@@ -361,13 +411,13 @@
                      <label for="facebook_url">{{__("message.Facebook Url")}}<span class="reqfield">*</span></label>
                      <input type="text" class="form-control" id="facebook_url" name="facebook_url"
                         placeholder='{{__("message.Enter Facebook Url")}}'
-                        value="{{isset($data->facebook_url)?$data->facebook_url:''}}" required="">
+                        value="{{isset($data->facebook_url) ? $data->facebook_url : ''}}" required="">
                   </div>
                   <div class="form-group">
                      <label for="twitter_url">{{__("message.Twitter Url")}}<span class="reqfield">*</span></label>
                      <input type="text" class="form-control" id="twitter_url" name="twitter_url"
                         placeholder='{{__("message.Enter Twitter Url")}}'
-                        value="{{isset($data->twitter_url)?$data->twitter_url:''}}" required="">
+                        value="{{isset($data->twitter_url) ? $data->twitter_url : ''}}" required="">
                   </div>
                </div>
             </div>
@@ -384,12 +434,12 @@
                </div>
             </div>
             <input type="hidden" name="lat" id="us2-lat"
-               value="{{isset($data->lat)?$data->lat:Config::get('mapdetail.lat')}}" />
+               value="{{isset($data->lat) ? $data->lat : Config::get('mapdetail.lat')}}" />
             <input type="hidden" name="lon" id="us2-lon"
-               value="{{isset($data->lon)?$data->lon:Config::get('mapdetail.long')}}" />
+               value="{{isset($data->lon) ? $data->lon : Config::get('mapdetail.long')}}" />
             <div class="row">
                <div class="form-group">
-                  @if(Session::get("is_demo")=='0')
+                  @if(Session::get("is_demo") == '0')
                   <button type="button" onclick="disablebtn()" class="btn btn-primary">{{__('message.Submit')}}</button>
                   @else
                   <button class="btn btn-primary" type="submit" value="Submit">{{__("message.Submit")}}</button>
