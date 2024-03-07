@@ -39,6 +39,7 @@ use App\Models\Banner;
 use App\Models\About;
 use App\Models\Privecy;
 use App\Models\TripGuide;
+use App\Models\OrderIdInfo;
 use Illuminate\Support\Facades\Log;
 use Hash;
 use Mail;
