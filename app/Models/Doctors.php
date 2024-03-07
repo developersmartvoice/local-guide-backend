@@ -24,4 +24,8 @@ class Doctors extends Model
     {
         return $this->hasMany(TripGuide::class, 'guide_id', 'id');
     }
+    public function orderInfos()
+    {
+        return $this->hasMany(OrderIdInfo::class, 'guide_id', 'id');
+    }
 }
