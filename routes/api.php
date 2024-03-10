@@ -22,7 +22,10 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
 Route::any("updateSendOffer", [ApiController::class, "updateSendOffer"]);
 Route::any("getSendOffers", [ApiController::class, "getSendOffers"]);
 Route::any("getRecipients", [ApiController::class, "getRecipients"]);
-
+Route::any("store_order_id", [ApiController::class, "storeOrderId"]);
+Route::any("store_member_details", [ApiController::class, "storeMemberDetails"]);
+Route::any("check_membership", [ApiController::class, "checkMembership"]);
+Route::any("set_membership", [ApiController::class, "setMemberStatus"]);
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
