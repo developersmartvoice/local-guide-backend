@@ -15,6 +15,6 @@ class OrderIdInfo extends Model
 
     public function doctor()
     {
-        return $this->belongsTo(Doctors::class, 'guide_id');
+        return $this->belongsTo(Doctors::class, 'guide_id', 'id');
     }
 }
