@@ -40,6 +40,7 @@ use App\Models\About;
 use App\Models\Privecy;
 use App\Models\TripGuide;
 use App\Models\OrderIdInfo;
+use App\Models\MembershipDetail;
 use Illuminate\Support\Facades\Log;
 use Hash;
 use Mail;
@@ -1013,6 +1014,69 @@ class ApiController extends Controller
         }
 
         return json_encode($response, JSON_NUMERIC_CHECK);
+    }
+
+    public function storeOrderId(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required',
+            'guide_id' => 'required',
+        ]);
+
+        // Create a new order_id_info record
+        $orderInfo = OrderIdInfo::create([
+            'order_id' => $request->input('order_id'),
+            'guide_id' => $request->input('guide_id'),
+        ]);
+
+        return response()->json(['message' => 'Order ID Info created successfully', 'data' => $orderInfo], 200);
+    }
+
+    public function storeMemberDetails(Request $request)
+    {
+        $request->validate([
+            'guide_id' => 'required',
+            'month' => 'required',
+        ]);
+
+        // Calculate the ending_subscription based on created_at and month
+        $monthMultiplier = $request->input('month');
+        $endingSubscription = Carbon::parse($request->input('created_at'))->addDays($monthMultiplier * 30);
+
+        // Create a new membership_detail record
+        $membershipDetail = MembershipDetail::create([
+            'guide_id' => $request->input('guide_id'),
+            'month' => $monthMultiplier,
+            'ending_subscription' => $endingSubscription,
+            'amount' => $request->input('amount'),
+        ]);
+
+        return response()->json(['message' => 'Membership detail created successfully', 'data' => $membershipDetail], 200);
+    }
+
+    public function checkMembership(Request $request)
+    {
+        $request->validate([
+            'id' => 'required'
+        ]);
+        $doctor = Doctors::find($request->get('id'));
+
+        $isMember = $doctor->is_member;
+
+        return response()->json(['is_member' => $isMember]);
+    }
+
+    public function setMemberStatus(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id'
+        ]);
+
+        $doctor = Doctors::find($request->id);
+        $doctor->is_member = true;
+        $doctor->save();
+
+        return response()->json(['message' => 'Doctor membership status updated successfully']);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
