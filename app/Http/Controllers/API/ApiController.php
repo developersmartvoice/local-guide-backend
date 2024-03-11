@@ -1711,12 +1711,14 @@ class ApiController extends Controller
     }
 
 
+
+
     public function updateImages(Request $request)
     {
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'doctor_id' => 'required|exists:doctors,id',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
         ]);
 
         // If validation fails, return error response
@@ -1736,37 +1738,34 @@ class ApiController extends Controller
             return response()->json(['error' => 'Doctor not found'], 404);
         }
 
-        // Handle image upload
-        $files = $request->file('images');
-
-        if (!is_array($files)) {
-            $files = [$files]; // Convert to array if not already
-        }
-        $uploadedImagePaths = [];
+        // Handle image uploads
+        $images = [];
         if ($request->hasFile('images')) {
-
-            if (!is_array($request)) {
-                $request = [$request]; // Convert to array if not already
+            // Delete existing images
+            $existingImages = json_decode($doctor->images, true) ?? [];
+            foreach ($existingImages as $existingImage) {
+                $existingImagePath = public_path('upload/doctors/' . $existingImage);
+                if (file_exists($existingImagePath)) {
+                    unlink($existingImagePath);
+                }
             }
 
-            foreach ($request->file('images') as $file) {
-                $extension = $file->getClientOriginalExtension() ?: 'png';
-                $folderName = '/upload/doctors/';
-                $picture = time() . '_' . uniqid() . '.' . $extension;
-                $destinationPath = public_path($folderName);
-                $file->move($destinationPath, $picture);
-                $uploadedImagePaths[] = $folderName . $picture; // Save the complete path
+            foreach ($request->file('images') as $image) {
+                $imageName = rand() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('upload/doctors'), $imageName);
+                $images[] = $imageName;
             }
-            // Update 'images' field in the database
-            $doctor->images = json_encode($uploadedImagePaths);
+
+            // Update doctor's images field
+            $doctor->images = json_encode($images);
             $doctor->save();
 
-            return response()->json(['success' => true, 'message' => 'Images updated successfully 444', 'img' => $uploadedImagePaths], 200);
+            return response()->json(['success' => true, 'message' => 'Images updated successfully', 'data' => $doctor], 200);
         }
-        $doctor->images = null;
-        $doctor->save();
-        return response()->json(['success' => true, 'message' => 'Images not uploaded'], 200);
+
+        return response()->json(['error' => 'No images provided'], 400);
     }
+
 
 
 
