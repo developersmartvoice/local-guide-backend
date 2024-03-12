@@ -1113,7 +1113,9 @@ class ApiController extends Controller
                     "doctors.image",
                     "doctors.consultation_fees",
                     "doctors.aboutus",
+                    "doctors.motto",
                     "doctors.images",
+                    "doctors.city",
                     DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
                            * cos(radians(doctors.lat)) 
                            * cos(radians(doctors.lon) - radians(" . $lon . ")) 
@@ -1843,7 +1845,10 @@ class ApiController extends Controller
         $doctor = Doctors::findOrFail($request->doctor_id); // Find the doctor by ID
 
         // Modify the image URL based on your actual storage path
-        $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
+        $imageURL = null;
+        if (!empty($doctor->image)) {
+            $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
+        }
 
         // Return the doctor's image URL
         return response()->json([
