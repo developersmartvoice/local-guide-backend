@@ -45,6 +45,8 @@ Route::any("updateCurrency", [ApiController::class, "updateCurrency"]);
 
 Route::any("updateImage", [ApiController::class, "updateImage"]);
 Route::any("updateImages", [ApiController::class, "updateImages"]);
+Route::any("deleteImage", [ApiController::class, "deleteImage"]);
+Route::any("deleteImages", [ApiController::class, "deleteImages"]);
 Route::any("getImage", [ApiController::class, "getImage"]);
 Route::any("getImages", [ApiController::class, "getImages"]);
 
