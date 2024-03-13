@@ -1115,7 +1115,9 @@ class ApiController extends Controller
                     "doctors.image",
                     "doctors.consultation_fees",
                     "doctors.aboutus",
+                    "doctors.motto",
                     "doctors.images",
+                    "doctors.city",
                     DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
                            * cos(radians(doctors.lat)) 
                            * cos(radians(doctors.lon) - radians(" . $lon . ")) 
@@ -1770,11 +1772,13 @@ class ApiController extends Controller
             $doctor->image = $imageName;
             $doctor->save();
 
-            return response()->json(['success' => true, 'message' => 'Image updated successfully', 'img' => $request], 200);
+            return response()->json(['success' => true, 'message' => 'Image updated successfully', 'data' => $doctor, 'img' => $request], 200);
         }
 
         return response()->json(['error' => 'No image provided'], 400);
     }
+
+
 
 
     public function updateImages(Request $request)
@@ -1782,7 +1786,7 @@ class ApiController extends Controller
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'doctor_id' => 'required|exists:doctors,id',
-            'images.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
         ]);
 
         // If validation fails, return error response
@@ -1802,37 +1806,131 @@ class ApiController extends Controller
             return response()->json(['error' => 'Doctor not found'], 404);
         }
 
-        // Handle image upload
-        $files = $request->file('images');
-
-        if (!is_array($files)) {
-            $files = [$files]; // Convert to array if not already
-        }
-        $uploadedImagePaths = [];
+        // Handle image uploads
+        $images = [];
         if ($request->hasFile('images')) {
-
-            if (!is_array($request)) {
-                $request = [$request]; // Convert to array if not already
+            // Delete existing images
+            $existingImages = json_decode($doctor->images, true) ?? [];
+            foreach ($existingImages as $existingImage) {
+                $existingImagePath = public_path('upload/doctors/' . $existingImage);
+                if (file_exists($existingImagePath)) {
+                    unlink($existingImagePath);
+                }
             }
 
-            foreach ($request->file('images') as $file) {
-                $extension = $file->getClientOriginalExtension() ?: 'png';
-                $folderName = '/upload/doctors/';
-                $picture = time() . '_' . uniqid() . '.' . $extension;
-                $destinationPath = public_path($folderName);
-                $file->move($destinationPath, $picture);
-                $uploadedImagePaths[] = $folderName . $picture; // Save the complete path
+            foreach ($request->file('images') as $image) {
+                $imageName = rand() . '_' . $image->getClientOriginalName();
+                $image->move(public_path('upload/doctors'), $imageName);
+                $images[] = $imageName;
             }
-            // Update 'images' field in the database
-            $doctor->images = json_encode($uploadedImagePaths);
+
+            // Update doctor's images field
+            $doctor->images = json_encode($images);
             $doctor->save();
 
-            return response()->json(['success' => true, 'message' => 'Images updated successfully 444', 'img' => $uploadedImagePaths], 200);
+            return response()->json(['success' => true, 'message' => 'Images updated successfully', 'data' => $doctor], 200);
         }
-        $doctor->images = null;
-        $doctor->save();
-        return response()->json(['success' => true, 'message' => 'Images not uploaded'], 200);
+
+        return response()->json(['error' => 'No images provided'], 400);
     }
+
+    public function deleteImage(Request $request)
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'doctor_id' => 'required|exists:doctors,id',
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->doctor_id);
+
+        // If doctor not found, return error response
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Check if the doctor has an image
+        if ($doctor->image) {
+            // Delete the image file
+            $imagePath = public_path('upload/doctors/' . $doctor->image);
+            if (file_exists($imagePath)) {
+                unlink($imagePath);
+            }
+
+            // Clear the image attribute
+            $doctor->image = null;
+            $doctor->save();
+
+            return response()->json(['success' => true, 'message' => 'Image deleted successfully'], 200);
+        } else {
+            return response()->json(['error' => 'Doctor does not have an image'], 400);
+        }
+    }
+
+
+    public function deleteImages(Request $request)
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'doctor_id' => 'required|exists:doctors,id',
+            'indexes' => 'required|array', // Array of indexes to delete
+            'indexes.*' => 'required|integer|min:0', // Each index should be an integer >= 0
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($request->doctor_id);
+
+        // If doctor not found, return error response
+        if (!$doctor) {
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+
+        // Check if the doctor has images
+        $images = json_decode($doctor->images, true) ?? [];
+
+        // Loop through the indexes and delete the corresponding images
+        foreach ($request->indexes as $index) {
+            // Check if the index is within the range of images
+            if (isset($images[$index])) {
+                // Delete the image file
+                $imagePath = public_path('upload/doctors/' . $images[$index]);
+                if (file_exists($imagePath)) {
+                    unlink($imagePath);
+                }
+
+                // Remove the image from the images array
+                unset($images[$index]);
+            }
+        }
+
+        // Re-index the array to maintain continuity
+        $images = array_values($images);
+
+        // Update the doctor's images field
+        $doctor->images = json_encode($images);
+        $doctor->save();
+
+        return response()->json(['success' => true, 'message' => 'Images deleted successfully', 'data' => $doctor], 200);
+    }
+
 
 
 
@@ -1846,7 +1944,10 @@ class ApiController extends Controller
         $doctor = Doctors::findOrFail($request->doctor_id); // Find the doctor by ID
 
         // Modify the image URL based on your actual storage path
-        $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
+        $imageURL = null;
+        if (!empty($doctor->image)) {
+            $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
+        }
 
         // Return the doctor's image URL
         return response()->json([
