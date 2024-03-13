@@ -952,6 +952,8 @@ class ApiController extends Controller
             "languages",
             "address",
             "image",
+            "images",
+            "aboutus",
             "services",
             "department_id",
             "consultation_fees",
