@@ -26,6 +26,7 @@ Route::any("store_order_id", [ApiController::class, "storeOrderId"]);
 Route::any("store_member_details", [ApiController::class, "storeMemberDetails"]);
 Route::any("check_membership", [ApiController::class, "checkMembership"]);
 Route::any("set_membership", [ApiController::class, "setMemberStatus"]);
+Route::any("end_subscription", [ApiController::class, "getEndSubscription"]);
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
