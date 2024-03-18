@@ -1081,6 +1081,23 @@ class ApiController extends Controller
         return response()->json(['message' => 'Doctor membership status updated successfully']);
     }
 
+    public function getEndSubscription(Request $request)
+    {
+        $request->validate([
+            'id' => 'required|exists:doctors,id'
+        ]);
+
+        // Retrieve the ending_subscription value based on the guide_id
+        $endingSubscription = MembershipDetail::where('guide_id', $request->id)->value('ending_subscription');
+
+        if ($endingSubscription === null) {
+            return response()->json(['error' => 'Ending subscription not found for the given guide_id'], 404);
+        }
+
+        // Return the ending_subscription value
+        return response()->json(['ending_subscription' => $endingSubscription], 200);
+    }
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function nearbydoctor(Request $request)
