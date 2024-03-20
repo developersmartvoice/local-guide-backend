@@ -39,6 +39,7 @@ use App\Models\Banner;
 use App\Models\About;
 use App\Models\Privecy;
 use App\Models\TripGuide;
+use App\Models\DirectBooking;
 use App\Models\OrderIdInfo;
 use App\Models\MembershipDetail;
 use Illuminate\Support\Facades\Log;
@@ -225,42 +226,120 @@ class ApiController extends Controller
 
 
 
+    public function deleteTrip(Request $request)
+    {
+        $response = array("success" => 0, "delete" => "Validation error");
 
-    // public function updateSendOffer(Request $request)
-    // {
-    //     // Validate the incoming request data
-    //     $request->validate([
-    //         'trip_id' => 'required|integer',
-    //         'sender_id' => 'required|integer',
-    //         'recipient_id' => 'required|integer',
-    //         'date' => 'required|date_format:Y-m-d',
-    //         'duration' => 'required|integer',
-    //         'timing' => 'required|string',
-    //         'message' => 'required|string',
-    //         'created_at' => 'required|date_format:Y-m-d H:i:s',
-    //         'updated_at' => 'required|date_format:Y-m-d H:i:s',
-    //     ]);
+        $rules = [
+            'id' => 'required|exists:trip_guides,id',
+        ];
 
-    //     // Create a new SendOffer instance
-    //     $sendOffer = new SendOffer();
+        $messages = array(
+            'id.required' => "Trip ID is required",
+            'id.exists' => "Invalid Trip ID",
+        );
 
-    //     // Assign values from the request to the SendOffer instance
-    //     $sendOffer->trip_id = $request->trip_id;
-    //     $sendOffer->sender_id = $request->sender_id;
-    //     $sendOffer->recipient_id = $request->recipient_id;
-    //     $sendOffer->date = $request->date;
-    //     $sendOffer->duration = $request->duration;
-    //     $sendOffer->timing = $request->timing;
-    //     $sendOffer->message = $request->message;
-    //     $sendOffer->created_at = $request->created_at;
-    //     $sendOffer->updated_at = $request->updated_at;
+        $validator = Validator::make($request->all(), $rules, $messages);
 
-    //     // Save the SendOffer instance
-    //     $sendOffer->save();
+        if ($validator->fails()) {
+            $message = '';
+            $messages_l = json_decode(json_encode($validator->messages()), true);
+            foreach ($messages_l as $msg) {
+                $message .= $msg[0] . ", ";
+            }
+            $response['delete'] = $message;
+        } else {
+            // Valid ID, retrieve trip details
+            $trip = TripGuide::with('sendOffers')->find($request->get('id'));
 
-    //     return response()->json(['message' => 'Send offer created successfully', 'send_offer' => $sendOffer], 201);
-    // }
+            if ($trip) {
+                $tripDetails = $trip->toArray(); // Convert trip details to array
+                $response['trip_details'] = $tripDetails; // Include trip details in the response
 
+                // Delete related send offers
+                $trip->sendOffers()->delete();
+
+                // Delete the trip guide
+                $trip->delete();
+                $response['success'] = 1;
+                $response['delete'] = "Trip deleted successfully";
+            } else {
+                $response['delete'] = "Trip not found";
+            }
+        }
+
+        return json_encode($response, JSON_NUMERIC_CHECK);
+    }
+
+
+
+
+    public function TripExpiration(Request $request)
+    {
+        // Validate input
+        $request->validate([
+            'guide_id' => 'required|integer', // Assuming guide_id is required and integer
+        ]);
+
+        // Get the guide_id from the request
+        $guideId = $request->input('guide_id');
+
+        // Find the trip guide based on the provided guide_id
+        $tripGuide = TripGuide::where('guide_id', $guideId)->first();
+
+        // Check if trip guide exists
+        if ($tripGuide) {
+            // Get the end_date from the trip guide
+            $endDate = Carbon::parse($tripGuide->end_date);
+
+            // Get the current time
+            $currentTime = Carbon::now();
+
+            // Compare end_date with current time
+            if ($endDate->greaterThan($currentTime)) {
+                // Trip is not expired
+                return response()->json([
+                    'message' => 'Trip is not expired',
+                    'expired' => false,
+                    'trip_details' => $tripGuide
+                ]);
+            } else {
+                // Trip is expired
+                return response()->json([
+                    'message' => 'Trip is expired',
+                    'expired' => true,
+                    'trip_details' => $tripGuide
+                ]);
+            }
+        } else {
+            // Trip guide not found
+            return response()->json([
+                'error' => 'Trip guide not found for the provided guide_id'
+            ], 404);
+        }
+    }
+
+    public function updateDirectBooking(Request $request)
+{
+    // Validate the incoming request data
+    $request->validate([
+        'sender_id' => 'required|integer',
+        'recipient_id' => 'required|integer',
+        'date' => 'required|date_format:Y-m-d',
+        'duration' => 'required|integer',
+        'timing' => 'required|string',
+        'message' => 'required|string',
+    ]);
+
+    // Create a new DirectBooking instance and set the attributes
+    $directBooking = new DirectBooking();
+    $directBooking->fill($request->all());
+
+    // Save the DirectBooking instance
+    $directBooking->save();
+
+    return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 201);
+}
 
 
 
@@ -894,7 +973,7 @@ class ApiController extends Controller
                 $words = explode(",", $row->languages); // Assuming 'languages' is the column name
                 foreach ($words as $word) {
                     if (in_array($word, $wordsToCount)) {
-                        if (!isset($counts[$word])) {
+                        if (!isset ($counts[$word])) {
                             $counts[$word] = 1;
                         } else {
                             $counts[$word]++;
@@ -926,7 +1005,7 @@ class ApiController extends Controller
                 $words = explode(",", $row->services); // Assuming 'services' is the column name
                 foreach ($words as $word) {
                     if (in_array($word, $wordsToCount)) {
-                        if (!isset($counts[$word])) {
+                        if (!isset ($counts[$word])) {
                             $counts[$word] = 1;
                         } else {
                             $counts[$word]++;
@@ -1150,11 +1229,11 @@ class ApiController extends Controller
                 foreach ($data as $k) {
                     //   $k->load('reviewls');
                     $department = Services::find($k->department_id);
-                    $k->department_name = isset($department) ? $department->name : "";
+                    $k->department_name = isset ($department) ? $department->name : "";
                     $k->image = asset("public/upload/doctors") . '/' . $k->image;
 
                     // Check if the 'images' property exists
-                    if (isset($k->images)) {
+                    if (isset ($k->images)) {
                         // Convert the images field value from JSON to an array
                         $k->images = json_decode($k->images, true);
 
@@ -1209,7 +1288,7 @@ class ApiController extends Controller
             $response['register'] = $message;
         } else {
             $getuser = Patient::where("phone", $request->get("phone"))->first();
-            if (empty($getuser)) { //update token
+            if (empty ($getuser)) { //update token
 
                 $getemail = Patient::where("email", $request->get("email"))->first();
                 if ($getemail) {
@@ -1513,7 +1592,7 @@ class ApiController extends Controller
             $response['register'] = $message;
         } else {
             $getuser = Doctors::where("email", $request->get("email"))->first();
-            if (empty($getuser)) { //update token
+            if (empty ($getuser)) { //update token
                 $login_field = "";
                 $user_id = "";
                 $connectycube_password = "";
@@ -1926,7 +2005,7 @@ class ApiController extends Controller
         // Loop through the indexes and delete the corresponding images
         foreach ($request->indexes as $index) {
             // Check if the index is within the range of images
-            if (isset($images[$index])) {
+            if (isset ($images[$index])) {
                 // Delete the image file
                 $imagePath = public_path('upload/doctors/' . $images[$index]);
                 if (file_exists($imagePath)) {
@@ -1962,7 +2041,7 @@ class ApiController extends Controller
 
         // Modify the image URL based on your actual storage path
         $imageURL = null;
-        if (!empty($doctor->image)) {
+        if (!empty ($doctor->image)) {
             $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
         }
 
@@ -1989,7 +2068,7 @@ class ApiController extends Controller
         $images = json_decode($doctor->images);
 
         // Check if images field is not empty and is an array
-        if (!empty($images) && is_array($images)) {
+        if (!empty ($images) && is_array($images)) {
             // Iterate over each image filename and construct the image URLs
             foreach ($images as $image) {
                 $imageURLs[] = asset('public/upload/doctors') . '/' . $image;
@@ -2026,7 +2105,7 @@ class ApiController extends Controller
             $response['register'] = $message;
         } else {
             $getdetail = Doctors::find($request->get("doctor_id"));
-            if (empty($getdetail)) {
+            if (empty ($getdetail)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
@@ -2146,7 +2225,7 @@ class ApiController extends Controller
                     $main[] = $slotlist;
                 }
             }
-            if (empty($slotlist)) {
+            if (empty ($slotlist)) {
                 $response['success'] = "0";
                 $response['register'] = "Slot Not Found";
             } else {
@@ -2259,8 +2338,8 @@ class ApiController extends Controller
                     if ($doctors) {
                         $d->name = $doctors->name;
                         $d->address = $doctors->address;
-                        $d->image = isset($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
-                        $d->department_name = isset($department) ? $department->name : "";
+                        $d->image = isset ($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
+                        $d->department_name = isset ($department) ? $department->name : "";
                     } else {
                         $d->name = "";
                         $d->address = "";
@@ -2331,8 +2410,8 @@ class ApiController extends Controller
                     if ($doctors) {
                         $d->name = $doctors->name;
                         $d->address = $doctors->address;
-                        $d->image = isset($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
-                        $d->department_name = isset($department) ? $department->name : "";
+                        $d->image = isset ($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
+                        $d->department_name = isset ($department) ? $department->name : "";
                     } else {
                         $d->name = "";
                         $d->address = "";
@@ -2395,11 +2474,11 @@ class ApiController extends Controller
                 $main_array = array();
                 foreach ($data as $d) {
                     $ls = array();
-                    $ls['name'] = isset($d->patientls->name) ? $d->patientls->name : "";
-                    $ls['rating'] = isset($d->rating) ? $d->rating : "";
-                    $ls['description'] = isset($d->description) ? $d->description : "";
-                    $ls['image'] = isset($d->patientls->profile_pic) ? asset('public/upload/profile') . '/' . $d->patientls->profile_pic : "";
-                    $ls['phone'] = isset($d->patientls->phone) ? $d->phone : "";
+                    $ls['name'] = isset ($d->patientls->name) ? $d->patientls->name : "";
+                    $ls['rating'] = isset ($d->rating) ? $d->rating : "";
+                    $ls['description'] = isset ($d->description) ? $d->description : "";
+                    $ls['image'] = isset ($d->patientls->profile_pic) ? asset('public/upload/profile') . '/' . $d->patientls->profile_pic : "";
+                    $ls['phone'] = isset ($d->patientls->phone) ? $d->phone : "";
                     $main_array[] = $ls;
                 }
 
@@ -2440,7 +2519,7 @@ class ApiController extends Controller
                     $user = Patient::find($d->user_id);
                     if ($user) {
                         $d->name = $user->name;
-                        $d->image = isset($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
+                        $d->image = isset ($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
                     } else {
                         $d->name = "";
                         $d->image = "";
@@ -2500,7 +2579,7 @@ class ApiController extends Controller
                     $user = Patient::find($d->user_id);
                     if ($user) {
                         $d->name = $user->name;
-                        $d->image = isset($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
+                        $d->image = isset ($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
                     } else {
                         $d->name = "";
                         $d->image = "";
@@ -2554,12 +2633,12 @@ class ApiController extends Controller
             // echo "<pre>";
             // print_r($data);
             // die();
-            if (empty($data)) {
+            if (empty ($data)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
                 $d = Services::find($data->department_id);
-                $data->department_name = isset($d) ? $d->name : "";
+                $data->department_name = isset ($d) ? $d->name : "";
                 unset($data->department_id);
                 // if (isset($data->image) && !empty($data->image))
                 // {
@@ -2567,7 +2646,7 @@ class ApiController extends Controller
                 // }else{
                 //   $data->image = 'user.png';
                 // }
-                if (isset($data->images)) {
+                if (isset ($data->images)) {
                     // Convert the images field value from JSON to an array
                     $data->images = json_decode($data->images, true);
 
@@ -2583,12 +2662,12 @@ class ApiController extends Controller
 
                 $mysubscriptionlist = Subscriber::where('doctor_id', $request->get("doctor_id"))->where("status", '2')->orderby('id', 'DESC')->first();
 
-                if (isset($mysubscriptionlist)) {
+                if (isset ($mysubscriptionlist)) {
                     $mysubscriptionlist->subscription_data = Subscription::find($mysubscriptionlist->subscription_id);
 
 
                     $datetime = new DateTime($mysubscriptionlist->date);
-                    if (isset($mysubscriptionlist->subscription_data)) {
+                    if (isset ($mysubscriptionlist->subscription_data)) {
                         $month = $mysubscriptionlist->subscription_data->month;
                         $datetime->modify('+' . $month . ' month');
                         $date = $datetime->format('Y-m-d H:i:s');
@@ -2802,18 +2881,18 @@ class ApiController extends Controller
             $ls = array();
             if ($data) {
                 if ($request->get("type") == 1) { //patients
-                    $ls['doctor_image'] = isset($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
-                    $ls['doctor_name'] = isset($data->doctorls) ? $data->doctorls->name : "";
-                    $ls['user_image'] = isset($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
-                    $ls['user_name'] = isset($data->patientls) ? $data->patientls->name : "";
+                    $ls['doctor_image'] = isset ($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
+                    $ls['doctor_name'] = isset ($data->doctorls) ? $data->doctorls->name : "";
+                    $ls['user_image'] = isset ($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
+                    $ls['user_name'] = isset ($data->patientls) ? $data->patientls->name : "";
                     $ls['status'] = $data->status;
                     $ls['doctor_id'] = $data->doctor_id;
                     $ls['user_id'] = $data->user_id;
                     $ls['date'] = $data->date;
                     $ls['slot'] = $data->slot_name;
-                    $ls['phone'] = isset($data->doctorls) ? $data->doctorls->phoneno : "";
+                    $ls['phone'] = isset ($data->doctorls) ? $data->doctorls->phoneno : "";
                     ;
-                    $ls['email'] = isset($data->doctorls) ? $data->doctorls->email : "";
+                    $ls['email'] = isset ($data->doctorls) ? $data->doctorls->email : "";
                     ;
                     $ls['description'] = $data->user_description;
                     $ls['connectycube_user_id'] = $data->doctorls->connectycube_user_id;
@@ -2861,10 +2940,10 @@ class ApiController extends Controller
 
 
                 } else { //doctor
-                    $ls['user_image'] = isset($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
-                    $ls['user_name'] = isset($data->patientls) ? $data->patientls->name : "";
-                    $ls['doctor_name'] = isset($data->doctorls) ? $data->doctorls->name : "";
-                    $ls['doctor_image'] = isset($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
+                    $ls['user_image'] = isset ($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
+                    $ls['user_name'] = isset ($data->patientls) ? $data->patientls->name : "";
+                    $ls['doctor_name'] = isset ($data->doctorls) ? $data->doctorls->name : "";
+                    $ls['doctor_image'] = isset ($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
 
                     $ls['status'] = $data->status;
                     $ls['date'] = $data->date;
@@ -2872,7 +2951,7 @@ class ApiController extends Controller
                     $ls['user_id'] = $data->user_id;
                     $ls['slot'] = $data->slot_name;
                     $ls['phone'] = $data->phone;
-                    $ls['email'] = isset($data->patientls) ? $data->patientls->email : "";
+                    $ls['email'] = isset ($data->patientls) ? $data->patientls->email : "";
                     $ls['connectycube_user_id'] = $data->patientls->connectycube_user_id;
                     $ls['description'] = $data->user_description;
                     $ls['id'] = $data->id;
@@ -2929,7 +3008,64 @@ class ApiController extends Controller
 
     }
 
-    // use App\Models\TokenData;
+    public function getDirectBooking(Request $request)
+    {
+        // Initialize the $message variable
+        $message = '';
+
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer|string', // Adjusted validation rule for ID
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'data_for_chat' => null, 'data_for_show' => null], 400);
+        }
+
+        $userId = $request->input('id');
+
+        // Check if the user ID exists as a sender in any Direct_Booking record
+        $senderBookings = DirectBooking::where('sender_id', $userId)->get();
+
+        if ($senderBookings->isEmpty()) {
+            // User is not a sender
+            return response()->json(['success' => false, 'message' => 'User is not a sender', 'data_for_chat' => null, 'data_for_show' => null], 404);
+        }
+
+        // User is sender
+        $message = 'User is Sender';
+
+        $data_for_show = [];
+        $recipientDetails = [];
+
+        foreach ($senderBookings as $booking) {
+            // Retrieve recipient details for each booking
+            $recipientId = $booking->recipient_id;
+            $recipient = Doctors::find($recipientId);
+            $recipientTokenData = TokenData::where('doctor_id', $recipientId)->get(['token', 'type']); // Adjusted column name
+
+            // Construct data for chat
+            $data_for_chat = [
+                'name' => $recipient->name,
+                'uid' => $recipientId,
+                'connectycube_user_id' => $recipient->connectycube_user_id,
+                'device_token' => $recipientTokenData->toArray(),
+                'recipient_image' => asset('public/upload/doctors') . '/' . Doctors::find($recipientId)->image,
+                'sender_image' => asset('public/upload/doctors') . '/' . Doctors::find($userId)->image,
+            ];
+
+            // Fetch all details for sender for each booking
+            $recipientDetails[] = $data_for_chat;
+
+            $bookingDetails = $booking->toArray();
+            $bookingDetails['recipient_name'] = $recipient->name; // Include recipient's name in booking details
+            // Include other relevant details from Direct_Booking model
+            $data_for_show[] = $bookingDetails;
+        }
+
+        return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $recipientDetails, 'data_for_show' => $data_for_show]);
+    }
 
 
 
@@ -3065,175 +3201,6 @@ class ApiController extends Controller
 
         return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $senderDetails, 'data_for_show' => $data_for_show]);
     }
-
-
-
-    // public function getSendOffers(Request $request)
-    // {
-    //     // Initialize the $message variable
-    //     $message = '';
-
-    //     // Validate the incoming request data
-    //     $validator = Validator::make($request->all(), [
-    //         'id' => 'required|integer|string', // Adjusted validation rule for ID
-    //     ]);
-
-    //     // If validation fails, return error response
-    //     if ($validator->fails()) {
-    //         return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'data_for_chat' => null, 'data_for_show' => null], 400);
-    //     }
-
-    //     $userId = $request->input('id');
-
-    //     // Check if the user ID exists as a sender in any SendOffer record
-    //     $senderOffer = SendOffer::where('sender_id', $userId)->first();
-
-    //     // Check if the user ID exists as a recipient in any SendOffer record
-    //     $recipientOffer = SendOffer::where('recipient_id', $userId)->first();
-
-    //     $data_for_chat = [];
-    //     $data_for_show = [];
-
-    //     if ($senderOffer && $recipientOffer) {
-    //         // User is both sender and recipient
-    //         $message = 'User is both sender and recipient';
-
-    //         // Retrieve the trip_id from the senderOffer (assuming it's the same as the recipientOffer)
-    //         $tripId = $senderOffer->trip_id;
-
-    //         // Check if the user is a recipient based on the trip_id and guide_id match
-    //         $isRecipient = TripGuide::where('id', $tripId)->where('guide_id', $userId)->exists();
-
-    //         if ($isRecipient) {
-    //             $message = 'User is Recipent';
-    //             // User is recipient
-    //             $data_for_chat['name'] = Doctors::find($userId)->name;
-    //             $data_for_chat['uid'] = $userId;
-    //             $data_for_chat['connectycube_user_id'] = Doctors::find($userId)->connectycube_user_id;
-    //             $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
-    //             $data_for_chat['device_token'] = $tokenData->toArray();
-    //             $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-    //             $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->sender_id)->image;
-
-    //             // Fetch all details for recipient
-    //             $data_for_show = $recipientOffer->toArray();
-    //         } else {
-    //             $message = 'User is Sender';
-    //             // User is only sender
-    //             $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
-    //             $data_for_chat['uid'] = $senderOffer->recipient_id;
-    //             $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
-    //             $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
-    //             $data_for_chat['device_token'] = $tokenData->toArray();
-    //             $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
-    //             $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-
-    //             $data_for_show = $senderOffer->toArray();
-    //         }
-    //     } elseif ($senderOffer) {
-    //         $message = 'User is Sender';
-    //         // User is only sender
-    //         $data_for_chat['name'] = Doctors::find($senderOffer->recipient_id)->name;
-    //         $data_for_chat['uid'] = $senderOffer->recipient_id;
-    //         $data_for_chat['connectycube_user_id'] = Doctors::find($senderOffer->recipient_id)->connectycube_user_id;
-    //         $tokenData = TokenData::where('doctor_id', $senderOffer->recipient_id)->get(['token', 'type']); // Adjusted column name
-    //         $data_for_chat['device_token'] = $tokenData->toArray();
-    //         $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($senderOffer->recipient_id)->image;
-    //         $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-
-    //         $data_for_show = $senderOffer->toArray();
-    //     } elseif ($recipientOffer) {
-    //         $message = 'User is Recipent';
-    //         // User is only recipient
-    //         $data_for_chat['name'] = Doctors::find($recipientOffer->sender_id)->name;
-    //         $data_for_chat['uid'] = $recipientOffer->sender_id;
-    //         $data_for_chat['connectycube_user_id'] = Doctors::find($recipientOffer->sender_id)->connectycube_user_id;
-    //         $tokenData = TokenData::where('doctor_id', $userId)->get(['token', 'type']); // Adjusted column name
-    //         $data_for_chat['device_token'] = $tokenData->toArray();
-    //         $data_for_chat['recipient_image'] = asset('public/upload/doctors') . '/' . Doctors::find($userId)->image;
-    //         $data_for_chat['sender_image'] = asset('public/upload/doctors') . '/' . Doctors::find($recipientOffer->sender_id)->image;
-
-    //         // Fetch all details for recipient
-    //         $data_for_show = $recipientOffer->toArray();
-    //     } else {
-    //         // User is neither sender nor recipient
-    //         return response()->json(['success' => false, 'message' => 'User is neither sender nor recipient', 'data_for_chat' => null, 'data_for_show' => null], 404);
-    //     }
-
-    //     return response()->json(['success' => true, 'message' => $message, 'data_for_chat' => $data_for_chat, 'data_for_show' => $data_for_show]);
-    // }
-
-
-
-
-    // public function getRecipients(Request $request)
-    // {
-    //     // Initialize the $message variable
-    //     $message = '';
-
-    //     // Validate the incoming request data
-    //     $validator = Validator::make($request->all(), [
-    //         'id' => 'required|integer|string', // Adjusted validation rule for ID
-    //     ]);
-
-    //     // If validation fails, return error response
-    //     if ($validator->fails()) {
-    //         return response()->json(['success' => false, 'message' => $validator->errors()->first(), 'results' => []], 400);
-    //     }
-
-    //     $userId = $request->input('id');
-
-    //     // Check if the user ID exists as a sender or recipient in any SendOffer record
-    //     $senderOffers = SendOffer::where('sender_id', $userId)->orWhere('recipient_id', $userId)->get();
-
-    //     $results = [];
-
-    //     // Check if any sender or recipient offers exist
-    //     if ($senderOffers->isEmpty()) {
-    //         // User is neither sender nor recipient
-    //         $message = 'User is neither sender nor recipient';
-    //         return response()->json(['success' => false, 'message' => $message, 'results' => []], 404);
-    //     }
-
-    //     // Process sender and recipient information
-    //     foreach ($senderOffers as $offer) {
-    //         $isSender = $offer->sender_id == $userId;
-    //         $isRecipient = $offer->recipient_id == $userId;
-
-    //         $role = '';
-    //         if ($isSender && $isRecipient) {
-    //             // $message = 'User is both sender and recipient';
-    //             $role = 'Sender and Recipient';
-    //         } elseif ($isSender) {
-    //             // $message = 'User is sender';
-    //             $role = 'Sender';
-    //         } elseif ($isRecipient) {
-    //             // $message = 'User and recipient';
-    //             $role = 'Recipient';
-    //         }
-
-    //         $results[] = [
-    //             'data' => [
-    //                 'role' => $role,
-    //                 'name' => Doctors::find($userId)->name,
-    //                 'uid' => $userId,
-    //                 'connectycube_user_id' => Doctors::find($userId)->connectycube_user_id,
-    //                 'device_token' => TokenData::where('doctor_id', $userId)->get(['token', 'type'])->toArray(),
-    //                 'recipient_image' => $isSender ? asset('public/upload/doctors') . '/' . Doctors::find($offer->recipient_id)->image : null,
-    //                 'sender_image' => $isRecipient ? asset('public/upload/doctors') . '/' . Doctors::find($offer->sender_id)->image : null,
-    //                 'details' => $offer->toArray(),
-    //             ],
-    //         ];
-    //     }
-
-    //     return response()->json(['success' => true, 'message' => $message, 'results' => $results]);
-    // }
-
-
-
-
-
-
 
 
 
@@ -3453,7 +3420,7 @@ class ApiController extends Controller
         } else {
             $data = Doctors::find($request->get("doctor_id"));
 
-            if (empty($data)) {
+            if (empty ($data)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
@@ -3496,7 +3463,7 @@ class ApiController extends Controller
         } else {
             $data1 = Patient::find($request->get("id"));
 
-            if (empty($data1)) {
+            if (empty ($data1)) {
                 $response['success'] = "0";
                 $response['register'] = "Patient Not Found";
             } else {
@@ -3765,7 +3732,7 @@ class ApiController extends Controller
                 $result = curl_exec($ch);
                 //echo "<pre>";print_r($result);exit;
                 if ($result === FALSE) {
-                    die('Curl failed: ' . curl_error($ch));
+                    die ('Curl failed: ' . curl_error($ch));
                 }
                 curl_close($ch);
                 $response[] = json_decode($result, true);
@@ -3826,7 +3793,7 @@ class ApiController extends Controller
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
                 $result = curl_exec($ch);
                 if ($result === FALSE) {
-                    die('Curl failed: ' . curl_error($ch));
+                    die ('Curl failed: ' . curl_error($ch));
                 }
                 curl_close($ch);
                 $response[] = json_decode($result, true);
@@ -4022,7 +3989,7 @@ class ApiController extends Controller
         } else {
             $date = $request->get("date");
             $data = Doctor_Hoilday::find($request->get("id"));
-            if (!empty($data)) {
+            if (!empty ($data)) {
                 $data->delete();
                 $response['success'] = "1";
                 $response['msg'] = "Holiday Delete Successfully";
@@ -4059,7 +4026,7 @@ class ApiController extends Controller
             $date = $request->get("date");
             $data = Doctor_Hoilday::where("start_date", "<=", $date)->where("end_date", ">=", $date)->where("doctor_id", $request->get("doctor_id"))->first();
             // echo "<pre>";print_r($data);exit;
-            if (empty($data)) {
+            if (empty ($data)) {
                 $response['success'] = "1";
                 $response['msg'] = "Working Day";
             } else {
@@ -4223,7 +4190,7 @@ class ApiController extends Controller
 
         $speciality = Services::select('id', 'name', 'icon')->get();
 
-        if (!empty($request->get("user_id"))) {
+        if (!empty ($request->get("user_id"))) {
             $user_id = $request->get("user_id");
         } else {
             $user_id = 0;

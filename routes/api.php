@@ -19,6 +19,13 @@ Route::middleware('auth:api')->get('/user', function (Request $request) {
     return $request->user();
 });
 
+
+
+Route::any("deleteTrip", [ApiController::class, "deleteTrip"]);
+Route::any("tripExpiration", [ApiController::class, "tripExpiration"]);
+
+Route::any("updateDirectBooking", [ApiController::class, "updateDirectBooking"]);
+Route::any("getDirectBooking", [ApiController::class, "getDirectBooking"]);
 Route::any("updateSendOffer", [ApiController::class, "updateSendOffer"]);
 Route::any("getSendOffers", [ApiController::class, "getSendOffers"]);
 Route::any("getRecipients", [ApiController::class, "getRecipients"]);
