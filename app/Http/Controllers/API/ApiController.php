@@ -225,7 +225,6 @@ class ApiController extends Controller
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
     public function deleteTrip(Request $request)
     {
         $response = array("success" => 0, "delete" => "Validation error");
@@ -256,8 +255,12 @@ class ApiController extends Controller
                 $tripDetails = $trip->toArray(); // Convert trip details to array
                 $response['trip_details'] = $tripDetails; // Include trip details in the response
 
-                // Delete related send offers
-                $trip->sendOffers()->delete();
+                // Check if related send offers exist
+                if ($trip->sendOffers()->exists()) {
+                    // Delete related send offers
+                    $trip->sendOffers()->delete();
+                    $response['send_offers_deleted'] = true;
+                }
 
                 // Delete the trip guide
                 $trip->delete();
@@ -274,7 +277,7 @@ class ApiController extends Controller
 
 
 
-    public function TripExpiration(Request $request)
+    public function tripExpiration(Request $request)
     {
         // Validate input
         $request->validate([
@@ -320,26 +323,26 @@ class ApiController extends Controller
     }
 
     public function updateDirectBooking(Request $request)
-{
-    // Validate the incoming request data
-    $request->validate([
-        'sender_id' => 'required|integer',
-        'recipient_id' => 'required|integer',
-        'date' => 'required|date_format:Y-m-d',
-        'duration' => 'required|integer',
-        'timing' => 'required|string',
-        'message' => 'required|string',
-    ]);
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'sender_id' => 'required|integer',
+            'recipient_id' => 'required|integer',
+            'date' => 'required|date_format:Y-m-d',
+            'duration' => 'required|integer',
+            'timing' => 'required|string',
+            'message' => 'required|string',
+        ]);
 
-    // Create a new DirectBooking instance and set the attributes
-    $directBooking = new DirectBooking();
-    $directBooking->fill($request->all());
+        // Create a new DirectBooking instance and set the attributes
+        $directBooking = new DirectBooking();
+        $directBooking->fill($request->all());
 
-    // Save the DirectBooking instance
-    $directBooking->save();
+        // Save the DirectBooking instance
+        $directBooking->save();
 
-    return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 201);
-}
+        return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 201);
+    }
 
 
 
@@ -1177,7 +1180,7 @@ class ApiController extends Controller
         return response()->json(['ending_subscription' => $endingSubscription], 200);
     }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     public function nearbydoctor(Request $request)
     {
