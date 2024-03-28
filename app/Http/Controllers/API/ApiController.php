@@ -41,6 +41,7 @@ use App\Models\Privecy;
 use App\Models\TripGuide;
 use App\Models\DirectBooking;
 use App\Models\OrderIdInfo;
+use App\Models\AmountInfo;
 use App\Models\MembershipDetail;
 use Illuminate\Support\Facades\Log;
 use Hash;
@@ -223,6 +224,67 @@ class ApiController extends Controller
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public function AmountInformation(Request $request)
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'month' => 'required|numeric',
+            'amount' => 'required|numeric',
+            'currency' => 'required|string|max:3',
+        ]);
+
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Create a new amount info record
+        $amountInfo = AmountInfo::create([
+            'month' => $request->month,
+            'amount' => $request->amount,
+            'currency' => $request->currency,
+        ]);
+
+        // Return success response with the created amount info data
+        return response()->json([
+            'success' => true,
+            'message' => 'Amount info created successfully',
+            'data' => $amountInfo,
+        ], 200);
+    }
+
+    public function getAmountInfoByCurrency(Request $request)
+{
+    // Validate the incoming request data
+    $validator = Validator::make($request->all(), [
+        'currency' => 'required|string|max:3',
+    ]);
+
+    // If validation fails, return error response
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $validator->errors()->all()
+        ], 400);
+    }
+
+    // Get amount info by currency
+    $currency = $request->input('currency');
+    $amountInfo = AmountInfo::where('currency', $currency)->pluck('amount');
+
+    // Return response with amounts
+    return response()->json([
+        'success' => true,
+        'message' => 'Amount info retrieved successfully',
+        'data' => $amountInfo,
+    ], 200);
+}
 
 
     public function deleteTrip(Request $request)
@@ -1876,62 +1938,6 @@ class ApiController extends Controller
 
         return response()->json(['error' => 'No image provided'], 400);
     }
-
-
-
-
-    // public function updateImages(Request $request)
-    // {
-    //     // Validate the incoming request data
-    //     $validator = Validator::make($request->all(), [
-    //         'doctor_id' => 'required|exists:doctors,id',
-    //         'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
-    //     ]);
-
-    //     // If validation fails, return error response
-    //     if ($validator->fails()) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Validation error',
-    //             'errors' => $validator->errors()->all()
-    //         ], 400);
-    //     }
-
-    //     // Find the doctor by ID
-    //     $doctor = Doctors::find($request->doctor_id);
-
-    //     // If doctor not found, return error response
-    //     if (!$doctor) {
-    //         return response()->json(['error' => 'Doctor not found'], 404);
-    //     }
-
-    //     // Handle image uploads
-    //     $images = [];
-    //     if ($request->hasFile('images')) {
-    //         // Delete existing images
-    //         $existingImages = json_decode($doctor->images, true) ?? [];
-    //         foreach ($existingImages as $existingImage) {
-    //             $existingImagePath = public_path('upload/doctors/' . $existingImage);
-    //             if (file_exists($existingImagePath)) {
-    //                 unlink($existingImagePath);
-    //             }
-    //         }
-
-    //         foreach ($request->file('images') as $image) {
-    //             $imageName = rand() . '_' . $image->getClientOriginalName();
-    //             $image->move(public_path('upload/doctors'), $imageName);
-    //             $images[] = $imageName;
-    //         }
-
-    //         // Update doctor's images field
-    //         $doctor->images = json_encode($images);
-    //         $doctor->save();
-
-    //         return response()->json(['success' => true, 'message' => 'Images updated successfully', 'data' => $doctor], 200);
-    //     }
-
-    //     return response()->json(['error' => 'No images provided'], 400);
-    // }
 
 
     public function updateImages(Request $request)

@@ -34,6 +34,8 @@ Route::any("store_member_details", [ApiController::class, "storeMemberDetails"])
 Route::any("check_membership", [ApiController::class, "checkMembership"]);
 Route::any("set_membership", [ApiController::class, "setMemberStatus"]);
 Route::any("end_subscription", [ApiController::class, "getEndSubscription"]);
+Route::any("amount_info", [ApiController::class, "AmountInformation"]);
+Route::any("get_amount_info", [ApiController::class, "getAmountInfoByCurrency"]);
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
