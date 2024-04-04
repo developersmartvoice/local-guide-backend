@@ -276,15 +276,16 @@ class ApiController extends Controller
 
     // Get amount info by currency
     $currency = $request->input('currency');
-    $amountInfo = AmountInfo::where('currency', $currency)->pluck('amount');
+    $amountInfo = AmountInfo::where('currency', $currency)->value('amount');
 
-    // Return response with amounts
+    // Return response with single amount
     return response()->json([
         'success' => true,
         'message' => 'Amount info retrieved successfully',
-        'data' => $amountInfo,
+        'amount' => $amountInfo,
     ], 200);
 }
+
 
 
     public function deleteTrip(Request $request)
@@ -384,27 +385,72 @@ class ApiController extends Controller
         }
     }
 
+    // public function updateDirectBooking(Request $request)
+    // {
+    //     // Validate the incoming request data
+    //     $request->validate([
+    //         'sender_id' => 'required|integer',
+    //         'recipient_id' => 'required|integer',
+    //         'date' => 'required|date_format:Y-m-d',
+    //         'duration' => 'required|integer',
+    //         'timing' => 'required|string',
+    //         'message' => 'required|string',
+    //     ]);
+
+    //     // Create a new DirectBooking instance and set the attributes
+    //     $directBooking = new DirectBooking();
+    //     $directBooking->fill($request->all());
+
+    //     // Save the DirectBooking instance
+    //     $directBooking->save();
+
+    //     return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 200);
+    // }
+
     public function updateDirectBooking(Request $request)
-    {
-        // Validate the incoming request data
-        $request->validate([
-            'sender_id' => 'required|integer',
-            'recipient_id' => 'required|integer',
-            'date' => 'required|date_format:Y-m-d',
-            'duration' => 'required|integer',
-            'timing' => 'required|string',
-            'message' => 'required|string',
-        ]);
+{
+    // Validate the incoming request data
+    $request->validate([
+        'sender_id' => 'required|integer',
+        'recipient_id' => 'required|integer',
+        'date' => 'required|date_format:Y-m-d',
+        'duration' => 'required|integer',
+        'timing' => 'required|string',
+        'message' => 'required|string',
+    ]);
 
-        // Create a new DirectBooking instance and set the attributes
-        $directBooking = new DirectBooking();
-        $directBooking->fill($request->all());
+    // Create a new DirectBooking instance and set the attributes
+    $directBooking = new DirectBooking();
+    $directBooking->fill($request->all());
 
-        // Save the DirectBooking instance
-        $directBooking->save();
+    // Save the DirectBooking instance
+    $directBooking->save();
 
-        return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 201);
-    }
+    // Fetch sender details
+    $sender = Doctors::find($request->sender_id);
+    $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
+
+    // Fetch recipient details
+    $recipient = Doctors::find($request->recipient_id);
+    $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
+
+    // Fetch recipient's device token
+    $recipientTokenData = TokenData::where('doctor_id', $request->recipient_id)->get(['token', 'type']);
+    $recipientDeviceTokens = $recipientTokenData->toArray();
+
+    // Get connectycube_id of recipient
+    $connectycubeId = $recipient->connectycube_user_id;
+
+    return response()->json([
+        'message' => 'Direct booking created successfully',
+        'direct_booking' => $directBooking,
+        'sender_image' => $senderImage,
+        'recipient_image' => $recipientImage,
+        'connectycube_id' => $connectycubeId,
+        'device_token' => $recipientDeviceTokens
+    ], 200);
+}
+
 
 
 
