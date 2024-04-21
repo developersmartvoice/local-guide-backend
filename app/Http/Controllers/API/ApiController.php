@@ -258,6 +258,52 @@ class ApiController extends Controller
         ], 200);
     }
 
+
+    public function updateAmountInformation(Request $request)
+{
+    // Validate the incoming request data
+    $validator = Validator::make($request->all(), [
+        'month' => 'required|numeric',
+        'amount' => 'required|numeric',
+        'currency' => 'required|string|max:3',
+    ]);
+
+    // If validation fails, return error response
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $validator->errors()->all()
+        ], 400);
+    }
+
+    // Find the existing amount info record by currency and month
+    $amountInfo = AmountInfo::where('currency', $request->currency)
+                             ->where('month', $request->month)
+                             ->first();
+
+    // If record not found, return error response
+    if (!$amountInfo) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Amount info not found for the specified currency and month',
+        ], 404);
+    }
+
+    // Update the amount information
+    $amountInfo->update([
+        'amount' => $request->amount,
+    ]);
+
+    // Return success response with the updated amount info data
+    return response()->json([
+        'success' => true,
+        'message' => 'Amount info updated successfully',
+        'data' => $amountInfo,
+    ], 200);
+}
+
+
     public function getAmountInfoByCurrency(Request $request)
 {
     // Validate the incoming request data
@@ -1290,83 +1336,159 @@ class ApiController extends Controller
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    public function nearbydoctor(Request $request)
-    {
-        $response = array("status" => "0", "register" => "Validation error");
-        $rules = [
-            'lat' => 'required',
-            'lon' => 'required'
-        ];
-        $messages = array(
-            'lat.required' => "lat is required",
-            'lon.required' => 'lon is requied'
-        );
-        $validator = Validator::make($request->all(), $rules, $messages);
-        if ($validator->fails()) {
-            $message = '';
-            $messages_l = json_decode(json_encode($validator->messages()), true);
-            foreach ($messages_l as $msg) {
-                $message .= $msg[0] . ", ";
-            }
-            $response['msg'] = $message;
-        } else {
-            $lat = $request->get("lat");
-            $lon = $request->get("lon");
+    // public function nearbydoctor(Request $request)
+    // {
+    //     $response = array("status" => "0", "register" => "Validation error");
+    //     $rules = [
+    //         'lat' => 'required',
+    //         'lon' => 'required'
+    //     ];
+    //     $messages = array(
+    //         'lat.required' => "lat is required",
+    //         'lon.required' => 'lon is requied'
+    //     );
+    //     $validator = Validator::make($request->all(), $rules, $messages);
+    //     if ($validator->fails()) {
+    //         $message = '';
+    //         $messages_l = json_decode(json_encode($validator->messages()), true);
+    //         foreach ($messages_l as $msg) {
+    //             $message .= $msg[0] . ", ";
+    //         }
+    //         $response['msg'] = $message;
+    //     } else {
+    //         $lat = $request->get("lat");
+    //         $lon = $request->get("lon");
 
-            $data = DB::table("doctors")
-                ->select(
-                    "doctors.id",
-                    "doctors.name",
-                    "doctors.address",
-                    "doctors.department_id",
-                    "doctors.image",
-                    "doctors.consultation_fees",
-                    "doctors.aboutus",
-                    "doctors.motto",
-                    "doctors.images",
-                    "doctors.city",
-                    DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
-                           * cos(radians(doctors.lat)) 
-                           * cos(radians(doctors.lon) - radians(" . $lon . ")) 
-                           + sin(radians(" . $lat . ")) 
-                           * sin(radians(doctors.lat))) AS distance"),
-                    DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
-                    DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
-                )
-                ->orderby('distance')->WhereNotNull("doctors.lat")->paginate(10);
+    //         $data = DB::table("doctors")
+    //             ->select(
+    //                 "doctors.id",
+    //                 "doctors.name",
+    //                 "doctors.address",
+    //                 "doctors.department_id",
+    //                 "doctors.image",
+    //                 "doctors.consultation_fees",
+    //                 "doctors.aboutus",
+    //                 "doctors.motto",
+    //                 "doctors.images",
+    //                 "doctors.city",
+    //                 DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
+    //                        * cos(radians(doctors.lat)) 
+    //                        * cos(radians(doctors.lon) - radians(" . $lon . ")) 
+    //                        + sin(radians(" . $lat . ")) 
+    //                        * sin(radians(doctors.lat))) AS distance"),
+    //                 DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
+    //                 DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+    //             )
+    //             ->orderby('distance')->WhereNotNull("doctors.lat")->paginate(10);
 
-            if ($data) {
+    //         if ($data) {
 
-                foreach ($data as $k) {
-                    //   $k->load('reviewls');
-                    $department = Services::find($k->department_id);
-                    $k->department_name = isset ($department) ? $department->name : "";
-                    $k->image = asset("public/upload/doctors") . '/' . $k->image;
+    //             foreach ($data as $k) {
+    //                 //   $k->load('reviewls');
+    //                 $department = Services::find($k->department_id);
+    //                 $k->department_name = isset ($department) ? $department->name : "";
+    //                 $k->image = asset("public/upload/doctors") . '/' . $k->image;
 
-                    // Check if the 'images' property exists
-                    if (isset ($k->images)) {
-                        // Convert the images field value from JSON to an array
-                        $k->images = json_decode($k->images, true);
+    //                 // Check if the 'images' property exists
+    //                 if (isset ($k->images)) {
+    //                     // Convert the images field value from JSON to an array
+    //                     $k->images = json_decode($k->images, true);
 
-                        // Add the full image URLs to the images array
-                        if ($k->images) {
-                            $k->images = array_map(function ($image) {
-                                return asset("public/upload/doctors") . '/' . $image;
-                            }, $k->images);
-                        }
-                    }
+    //                     // Add the full image URLs to the images array
+    //                     if ($k->images) {
+    //                         $k->images = array_map(function ($image) {
+    //                             return asset("public/upload/doctors") . '/' . $image;
+    //                         }, $k->images);
+    //                     }
+    //                 }
 
-                    unset($k->department_id);
-                }
-                $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
-            } else {
-                $response = array("status" => 0, "msg" => "No Result Found");
-            }
+    //                 unset($k->department_id);
+    //             }
+    //             $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+    //         } else {
+    //             $response = array("status" => 0, "msg" => "No Result Found");
+    //         }
 
+    //     }
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+
+    // }
+
+
+    // use App\Models\Doctors; // Make sure to import the Doctors model
+
+public function nearbydoctor(Request $request)
+{
+    $response = array("status" => "0", "register" => "Validation error");
+    $rules = [
+        'lat' => 'required',
+        'lon' => 'required'
+    ];
+    $messages = array(
+        'lat.required' => "lat is required",
+        'lon.required' => 'lon is required'
+    );
+    $validator = Validator::make($request->all(), $rules, $messages);
+    if ($validator->fails()) {
+        $message = '';
+        $messages_l = json_decode(json_encode($validator->messages()), true);
+        foreach ($messages_l as $msg) {
+            $message .= $msg[0] . ", ";
         }
-        return json_encode($response, JSON_NUMERIC_CHECK);
+        $response['msg'] = $message;
+    } else {
+        $lat = $request->get("lat");
+        $lon = $request->get("lon");
+
+        $data = Doctors::select(
+                "id",
+                "name",
+                "address",
+                "department_id",
+                "image",
+                "consultation_fees",
+                "aboutus",
+                "motto",
+                "images",
+                "city",
+                DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
+                       * cos(radians(lat)) 
+                       * cos(radians(lon) - radians(" . $lon . ")) 
+                       + sin(radians(" . $lat . ")) 
+                       * sin(radians(lat))) AS distance"),
+                DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
+                DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+            )
+            ->orderby('distance')
+            ->whereNotNull("lat")
+            ->paginate(10);
+
+        if ($data->count() > 0) {
+            foreach ($data as $k) {
+                $department = Services::find($k->department_id);
+                $k->department_name = isset($department) ? $department->name : "";
+                $k->image = asset("public/upload/doctors") . '/' . $k->image;
+
+                if (isset($k->images)) {
+                    $k->images = json_decode($k->images, true);
+                    if ($k->images) {
+                        $k->images = array_map(function ($image) {
+                            return asset("public/upload/doctors") . '/' . $image;
+                        }, $k->images);
+                    }
+                }
+
+                unset($k->department_id);
+            }
+            $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+        } else {
+            $response = array("status" => 0, "msg" => "No Result Found");
+        }
 
     }
+    return json_encode($response, JSON_NUMERIC_CHECK);
+}
+
 
     public function postregisterpatient(Request $request)
     {
