@@ -35,6 +35,7 @@ Route::any("check_membership", [ApiController::class, "checkMembership"]);
 Route::any("set_membership", [ApiController::class, "setMemberStatus"]);
 Route::any("end_subscription", [ApiController::class, "getEndSubscription"]);
 Route::any("amount_info", [ApiController::class, "AmountInformation"]);
+Route::any("update_amount_info", [ApiController::class, "updateAmountInformation"]);
 Route::any("get_amount_info", [ApiController::class, "getAmountInfoByCurrency"]);
 
 
