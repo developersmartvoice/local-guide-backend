@@ -14,6 +14,7 @@ class DirectBooking extends Model
         'duration',
         'timing',
         'message',
+        'num_people',
     ];
 
     // Set the primary key as 'id'

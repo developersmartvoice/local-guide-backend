@@ -43,6 +43,8 @@ use App\Models\DirectBooking;
 use App\Models\OrderIdInfo;
 use App\Models\AmountInfo;
 use App\Models\MembershipDetail;
+use App\Models\AcceptedDirectBooking;
+use App\Models\RejectedDirectBooking;
 use Illuminate\Support\Facades\Log;
 use Hash;
 use Mail;
@@ -260,77 +262,77 @@ class ApiController extends Controller
 
 
     public function updateAmountInformation(Request $request)
-{
-    // Validate the incoming request data
-    $validator = Validator::make($request->all(), [
-        'month' => 'required|numeric',
-        'amount' => 'required|numeric',
-        'currency' => 'required|string|max:3',
-    ]);
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'month' => 'required|numeric',
+            'amount' => 'required|numeric',
+            'currency' => 'required|string|max:3',
+        ]);
 
-    // If validation fails, return error response
-    if ($validator->fails()) {
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Find the existing amount info record by currency and month
+        $amountInfo = AmountInfo::where('currency', $request->currency)
+            ->where('month', $request->month)
+            ->first();
+
+        // If record not found, return error response
+        if (!$amountInfo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Amount info not found for the specified currency and month',
+            ], 404);
+        }
+
+        // Update the amount information
+        $amountInfo->update([
+            'amount' => $request->amount,
+        ]);
+
+        // Return success response with the updated amount info data
         return response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'errors' => $validator->errors()->all()
-        ], 400);
+            'success' => true,
+            'message' => 'Amount info updated successfully',
+            'data' => $amountInfo,
+        ], 200);
     }
-
-    // Find the existing amount info record by currency and month
-    $amountInfo = AmountInfo::where('currency', $request->currency)
-                             ->where('month', $request->month)
-                             ->first();
-
-    // If record not found, return error response
-    if (!$amountInfo) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Amount info not found for the specified currency and month',
-        ], 404);
-    }
-
-    // Update the amount information
-    $amountInfo->update([
-        'amount' => $request->amount,
-    ]);
-
-    // Return success response with the updated amount info data
-    return response()->json([
-        'success' => true,
-        'message' => 'Amount info updated successfully',
-        'data' => $amountInfo,
-    ], 200);
-}
 
 
     public function getAmountInfoByCurrency(Request $request)
-{
-    // Validate the incoming request data
-    $validator = Validator::make($request->all(), [
-        'currency' => 'required|string|max:3',
-    ]);
+    {
+        // Validate the incoming request data
+        $validator = Validator::make($request->all(), [
+            'currency' => 'required|string|max:3',
+        ]);
 
-    // If validation fails, return error response
-    if ($validator->fails()) {
+        // If validation fails, return error response
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $validator->errors()->all()
+            ], 400);
+        }
+
+        // Get amount info by currency
+        $currency = $request->input('currency');
+        $amountInfo = AmountInfo::where('currency', $currency)->value('amount');
+
+        // Return response with single amount
         return response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'errors' => $validator->errors()->all()
-        ], 400);
+            'success' => true,
+            'message' => 'Amount info retrieved successfully',
+            'amount' => $amountInfo,
+        ], 200);
     }
-
-    // Get amount info by currency
-    $currency = $request->input('currency');
-    $amountInfo = AmountInfo::where('currency', $currency)->value('amount');
-
-    // Return response with single amount
-    return response()->json([
-        'success' => true,
-        'message' => 'Amount info retrieved successfully',
-        'amount' => $amountInfo,
-    ], 200);
-}
 
 
 
@@ -431,71 +433,350 @@ class ApiController extends Controller
         }
     }
 
-    // public function updateDirectBooking(Request $request)
-    // {
-    //     // Validate the incoming request data
-    //     $request->validate([
-    //         'sender_id' => 'required|integer',
-    //         'recipient_id' => 'required|integer',
-    //         'date' => 'required|date_format:Y-m-d',
-    //         'duration' => 'required|integer',
-    //         'timing' => 'required|string',
-    //         'message' => 'required|string',
-    //     ]);
-
-    //     // Create a new DirectBooking instance and set the attributes
-    //     $directBooking = new DirectBooking();
-    //     $directBooking->fill($request->all());
-
-    //     // Save the DirectBooking instance
-    //     $directBooking->save();
-
-    //     return response()->json(['message' => 'Direct booking created successfully', 'direct_booking' => $directBooking], 200);
-    // }
-
     public function updateDirectBooking(Request $request)
-{
-    // Validate the incoming request data
-    $request->validate([
-        'sender_id' => 'required|integer',
-        'recipient_id' => 'required|integer',
-        'date' => 'required|date_format:Y-m-d',
-        'duration' => 'required|integer',
-        'timing' => 'required|string',
-        'message' => 'required|string',
-    ]);
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'sender_id' => 'required|integer|numeric',
+            'recipient_id' => 'required|integer|numeric',
+            'date' => 'required|date_format:Y-m-d',
+            'duration' => 'required|integer|numeric',
+            'timing' => 'required|string',
+            'num_people' => 'required|integer|numeric',
+            'message' => 'required|string',
+        ]);
 
-    // Create a new DirectBooking instance and set the attributes
-    $directBooking = new DirectBooking();
-    $directBooking->fill($request->all());
+        // Create a new DirectBooking instance and set the attributes
+        $directBooking = new DirectBooking();
+        $directBooking->fill($request->all());
 
-    // Save the DirectBooking instance
-    $directBooking->save();
+        // Save the DirectBooking instance
+        $directBooking->save();
 
-    // Fetch sender details
-    $sender = Doctors::find($request->sender_id);
-    $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
+        // // Fetch sender details
+        // $sender = Doctors::find($request->sender_id);
+        // $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
 
-    // Fetch recipient details
-    $recipient = Doctors::find($request->recipient_id);
-    $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
+        // // Fetch recipient details
+        // $recipient = Doctors::find($request->recipient_id);
+        // $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
 
-    // Fetch recipient's device token
-    $recipientTokenData = TokenData::where('doctor_id', $request->recipient_id)->get(['token', 'type']);
-    $recipientDeviceTokens = $recipientTokenData->toArray();
+        // // Fetch recipient's device token
+        // $recipientTokenData = TokenData::where('doctor_id', $request->recipient_id)->get(['token', 'type']);
+        // $recipientDeviceTokens = $recipientTokenData->toArray();
 
-    // Get connectycube_id of recipient
-    $connectycubeId = $recipient->connectycube_user_id;
+        // // Get connectycube_id of recipient
+        // $connectycubeId = $recipient->connectycube_user_id;
 
-    return response()->json([
-        'message' => 'Direct booking created successfully',
-        'direct_booking' => $directBooking,
-        'sender_image' => $senderImage,
-        'recipient_image' => $recipientImage,
-        'connectycube_id' => $connectycubeId,
-        'device_token' => $recipientDeviceTokens
-    ], 200);
-}
+        return response()->json([
+            'message' => 'Direct booking created successfully',
+            'direct_booking' => $directBooking,
+            // 'sender_image' => $senderImage,
+            // 'recipient_image' => $recipientImage,
+            // 'connectycube_id' => $connectycubeId,
+            // 'device_token' => $recipientDeviceTokens
+        ], 200);
+    }
+
+
+
+
+    public function getDirectBookingByRecipientId(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'recipient_id' => 'required|integer',
+        ]);
+
+        // Find the direct bookings by recipient_id
+        $directBookings = DirectBooking::where('recipient_id', $request->recipient_id)->get();
+
+        // Check if direct bookings exist
+        if ($directBookings->isEmpty()) {
+            return response()->json([
+                'message' => 'No direct bookings found for the specified recipient_id',
+            ], 404);
+        }
+
+        // Initialize an array to store direct bookings with required details
+        $directBookingsWithDetails = [];
+
+        foreach ($directBookings as $booking) {
+            // Fetch sender details
+            $sender = Doctors::find($booking->sender_id);
+            $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
+
+            // Add required details to the direct booking
+            $bookingDetails = [
+                'booking_id' => $booking->id, // Include booking ID
+                'sender_name' => $sender->name,
+                'sender_id' => $sender->id,
+                'sender_image' => $senderImage,
+                'date' => $booking->date,
+                'timing' => $booking->timing,
+                'num_people' => $booking->num_people,
+                'message' => $booking->message,
+                'duration' => $booking->duration,
+            ];
+
+            // Add the booking with required details to the array
+            $directBookingsWithDetails[] = $bookingDetails;
+        }
+
+        return response()->json([
+            'message' => 'Direct bookings retrieved successfully',
+            'direct_bookings' => $directBookingsWithDetails,
+        ], 200);
+    }
+
+
+    public function acceptDirectBooking(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'direct_booking_id' => 'required|integer',
+        ]);
+
+        // Find the direct booking by ID
+        $directBooking = DirectBooking::find($request->direct_booking_id);
+
+        // Check if direct booking exists
+        if (!$directBooking) {
+            return response()->json([
+                'message' => 'Direct booking not found',
+            ], 404);
+        }
+
+        // Fetch sender details
+        $sender = Doctors::find($directBooking->sender_id);
+        $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
+        $senderName = $sender->name; // Fetch sender's name
+        $senderConnectycubeId = $sender->connectycube_user_id; // Fetch sender's connectycube ID
+
+        // Fetch sender's device token
+        $senderTokenData = TokenData::where('doctor_id', $directBooking->sender_id)->get(['token', 'type']);
+        $senderDeviceTokens = $senderTokenData->toArray();
+
+        // Fetch recipient details
+        $recipient = Doctors::find($directBooking->recipient_id);
+        $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
+        $recipientName = $recipient->name; // Fetch recipient's name
+
+        // Get connectycube_id of recipient
+        $connectycubeId = $recipient->connectycube_user_id;
+
+        // Create a new entry in the 'accepted' table
+        $acceptedBooking = new AcceptedDirectBooking();
+        $acceptedBooking->direct_booking_id = $directBooking->id;
+        $acceptedBooking->sender_id = $directBooking->sender_id;
+        $acceptedBooking->recipient_id = $directBooking->recipient_id;
+        $acceptedBooking->date = $directBooking->date;
+        $acceptedBooking->duration = $directBooking->duration;
+        $acceptedBooking->timing = $directBooking->timing;
+        $acceptedBooking->message = $directBooking->message;
+        $acceptedBooking->num_people = $directBooking->num_people;
+        $acceptedBooking->save();
+
+        // Delete the direct booking entry from the 'direct_bookings' table
+        $directBooking->delete();
+
+        return response()->json([
+            'message' => 'Direct booking accepted and transferred to the accepted table successfully',
+            'accepted_booking' => $acceptedBooking,
+            'sender_image' => $senderImage,
+            'sender_name' => $senderName, // Include sender's name in the response
+            'sender_id' => $directBooking->sender_id, // Include sender's ID in the response
+            'sender_connectycube_id' => $senderConnectycubeId, // Include sender's connectycube ID in the response
+            'sender_device_tokens' => $senderDeviceTokens, // Include sender's device tokens in the response
+            'recipient_image' => $recipientImage,
+            'recipient_name' => $recipientName, // Include recipient's name in the response
+            'recipient_id' => $directBooking->recipient_id, // Include recipient's ID in the response
+            'connectycube_id' => $connectycubeId,
+        ], 200);
+    }
+
+
+
+
+
+    public function rejectDirectBooking(Request $request)
+    {
+        // Validate the incoming request data
+        $request->validate([
+            'direct_booking_id' => 'required|integer',
+        ]);
+
+        // Find the direct booking by ID
+        $directBooking = DirectBooking::find($request->direct_booking_id);
+
+        // Check if direct booking exists
+        if (!$directBooking) {
+            return response()->json([
+                'message' => 'Direct booking not found',
+            ], 404);
+        }
+
+        // Create a new entry in the 'rejected' table
+        $rejectedBooking = new RejectedDirectBooking();
+        $rejectedBooking->fill($directBooking->toArray());
+        $rejectedBooking->save();
+
+        // Delete the direct booking entry from the 'direct_bookings' table
+        $directBooking->delete();
+
+        return response()->json([
+            'message' => 'Direct booking rejected and transferred to the rejected table successfully',
+            'rejected_booking' => $rejectedBooking,
+        ], 200);
+    }
+
+
+    public function checkSameRowDirectBooking(Request $request)
+    {
+        // Validate incoming request
+        $request->validate([
+            'sender_id' => 'required|integer',
+            'recipient_id' => 'required|integer',
+        ]);
+
+        // Get sender_id and recipient_id from the request
+        $senderId = $request->input('sender_id');
+        $recipientId = $request->input('recipient_id');
+
+
+        // Search for rows with sender_id and recipient_id
+        $isSameRow = DirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $senderId)
+                ->where('recipient_id', $recipientId);
+        })->exists();
+        $isSameRowReverse = DirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $recipientId)
+                ->where('recipient_id', $senderId);
+        })->exists();
+
+        if ($isSameRow) {
+            // Sender and recipient are in the same row
+            return response()->json(['message' => 'Sender and recipient are in the same row.', 'value' => true, 'msg1' => 'sender is sender'], 200);
+
+        } elseif ($isSameRowReverse) {
+            return response()->json(['message' => 'Sender and recipient are in the same row.', 'value' => true, 'msg1' => 'sender is not sender'], 200);
+        } else {
+            // Sender and recipient are not in the same row
+            return response()->json(['message' => 'Sender and recipient are not in the same row.', 'value' => false], 200);
+        }
+    }
+    public function checkSameRowAcceptBooking(Request $request)
+    {
+        // Validate incoming request
+        $request->validate([
+            'sender_id' => 'required|integer',
+            'recipient_id' => 'required|integer',
+        ]);
+
+        // Get sender_id and recipient_id from the request
+        $senderId = $request->input('sender_id');
+        $recipientId = $request->input('recipient_id');
+
+        // Search for rows with sender_id and recipient_id
+        $isSameRow = AcceptedDirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $senderId)
+                ->where('recipient_id', $recipientId);
+        })->exists();
+        $isSameRowReverse = AcceptedDirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $recipientId)
+                ->where('recipient_id', $senderId);
+        })->exists();
+        if ($isSameRow) {
+            $sender = Doctors::find($senderId);
+            $recipient = Doctors::find($recipientId);
+            $senderInfo = [
+                'sender_image' => asset('public/upload/doctors') . '/' . $sender->image,
+                'sender_name' => $sender->name,
+                'sender_id' => $sender->id,
+                'sender_connectycube_id' => $sender->connectycube_user_id,
+                'sender_device_tokens' => TokenData::where('doctor_id', $senderId)->get(['token', 'type'])->toArray(),
+            ];
+            $recipientInfo = [
+                'recipient_image' => asset('public/upload/doctors') . '/' . $recipient->image,
+                'recipient_name' => $recipient->name,
+                'recipient_id' => $recipient->id,
+                'recipient_connectycube_id' => $recipient->connectycube_user_id,
+                'recipient_device_tokens' => TokenData::where('doctor_id', $recipientId)->get(['token', 'type'])->toArray(),
+            ];
+            return response()->json([
+                'message' => 'Sender and recipient are in the same row.',
+                'value' => true,
+                'msg1' => 'sender is sender',
+                'sender_info' => $senderInfo,
+                'recipient_info' => $recipientInfo,
+            ], 200);
+        } elseif ($isSameRowReverse) {
+            $sender = Doctors::find($recipientId);
+            $recipient = Doctors::find($senderId);
+            $senderInfo = [
+                'sender_image' => asset('public/upload/doctors') . '/' . $sender->image,
+                'sender_name' => $sender->name,
+                'sender_id' => $sender->id,
+                'sender_connectycube_id' => $sender->connectycube_user_id,
+                'sender_device_tokens' => TokenData::where('doctor_id', $sender->id)->get(['token', 'type'])->toArray(),
+            ];
+            $recipientInfo = [
+                'recipient_image' => asset('public/upload/doctors') . '/' . $recipient->image,
+                'recipient_name' => $recipient->name,
+                'recipient_id' => $recipient->id,
+                'recipient_connectycube_id' => $recipient->connectycube_user_id,
+                'recipient_device_tokens' => TokenData::where('doctor_id', $recipient->id)->get(['token', 'type'])->toArray(),
+            ];
+            return response()->json([
+                'message' => 'Sender and recipient are in the same row.',
+                'value' => true,
+                'msg1' => 'sender is not sender',
+                'sender_info' => $senderInfo,
+                'recipient_info' => $recipientInfo,
+            ], 200);
+        } else {
+            // Sender and recipient are not in the same row
+            return response()->json([
+                'message' => 'Sender and recipient are not in the same row.',
+                'value' => false,
+            ], 200);
+        }
+    }
+
+    public function checkSameRowRejectBooking(Request $request)
+    {
+        // Validate incoming request
+        $request->validate([
+            'sender_id' => 'required|integer',
+            'recipient_id' => 'required|integer',
+        ]);
+
+        // Get sender_id and recipient_id from the request
+        $senderId = $request->input('sender_id');
+        $recipientId = $request->input('recipient_id');
+
+        // Search for rows with sender_id and recipient_id
+
+        $isSameRow = RejectedDirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $senderId)
+                ->where('recipient_id', $recipientId);
+        })->exists();
+        $isSameRowReverse = RejectedDirectBooking::where(function ($query) use ($senderId, $recipientId) {
+            $query->where('sender_id', $recipientId)
+                ->where('recipient_id', $senderId);
+        })->exists();
+
+        if ($isSameRow) {
+            // Sender and recipient are in the same row
+            return response()->json(['message' => 'Sender and recipient are in the same row.', 'value' => true, 'msg1' => 'sender is sender'], 200);
+
+        } elseif ($isSameRowReverse) {
+            return response()->json(['message' => 'Sender and recipient are in the same row.', 'value' => true, 'msg1' => 'sender is not sender'], 200);
+        } else {
+            // Sender and recipient are not in the same row
+            return response()->json(['message' => 'Sender and recipient are not in the same row.', 'value' => false], 200);
+        }
+    }
 
 
 
@@ -1130,7 +1411,7 @@ class ApiController extends Controller
                 $words = explode(",", $row->languages); // Assuming 'languages' is the column name
                 foreach ($words as $word) {
                     if (in_array($word, $wordsToCount)) {
-                        if (!isset ($counts[$word])) {
+                        if (!isset($counts[$word])) {
                             $counts[$word] = 1;
                         } else {
                             $counts[$word]++;
@@ -1162,7 +1443,7 @@ class ApiController extends Controller
                 $words = explode(",", $row->services); // Assuming 'services' is the column name
                 foreach ($words as $word) {
                     if (in_array($word, $wordsToCount)) {
-                        if (!isset ($counts[$word])) {
+                        if (!isset($counts[$word])) {
                             $counts[$word] = 1;
                         } else {
                             $counts[$word]++;
@@ -1193,6 +1474,8 @@ class ApiController extends Controller
             "services",
             "department_id",
             "consultation_fees",
+            "city",
+            "motto",
             DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
             DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
         )->paginate(10);
@@ -1417,30 +1700,30 @@ class ApiController extends Controller
 
     // use App\Models\Doctors; // Make sure to import the Doctors model
 
-public function nearbydoctor(Request $request)
-{
-    $response = array("status" => "0", "register" => "Validation error");
-    $rules = [
-        'lat' => 'required',
-        'lon' => 'required'
-    ];
-    $messages = array(
-        'lat.required' => "lat is required",
-        'lon.required' => 'lon is required'
-    );
-    $validator = Validator::make($request->all(), $rules, $messages);
-    if ($validator->fails()) {
-        $message = '';
-        $messages_l = json_decode(json_encode($validator->messages()), true);
-        foreach ($messages_l as $msg) {
-            $message .= $msg[0] . ", ";
-        }
-        $response['msg'] = $message;
-    } else {
-        $lat = $request->get("lat");
-        $lon = $request->get("lon");
+    public function nearbydoctor(Request $request)
+    {
+        $response = array("status" => "0", "register" => "Validation error");
+        $rules = [
+            'lat' => 'required',
+            'lon' => 'required'
+        ];
+        $messages = array(
+            'lat.required' => "lat is required",
+            'lon.required' => 'lon is required'
+        );
+        $validator = Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            $message = '';
+            $messages_l = json_decode(json_encode($validator->messages()), true);
+            foreach ($messages_l as $msg) {
+                $message .= $msg[0] . ", ";
+            }
+            $response['msg'] = $message;
+        } else {
+            $lat = $request->get("lat");
+            $lon = $request->get("lon");
 
-        $data = Doctors::select(
+            $data = Doctors::select(
                 "id",
                 "name",
                 "address",
@@ -1459,35 +1742,35 @@ public function nearbydoctor(Request $request)
                 DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
                 DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
             )
-            ->orderby('distance')
-            ->whereNotNull("lat")
-            ->paginate(10);
+                ->orderby('distance')
+                ->whereNotNull("lat")
+                ->paginate(10);
 
-        if ($data->count() > 0) {
-            foreach ($data as $k) {
-                $department = Services::find($k->department_id);
-                $k->department_name = isset($department) ? $department->name : "";
-                $k->image = asset("public/upload/doctors") . '/' . $k->image;
+            if ($data->count() > 0) {
+                foreach ($data as $k) {
+                    $department = Services::find($k->department_id);
+                    $k->department_name = isset($department) ? $department->name : "";
+                    $k->image = asset("public/upload/doctors") . '/' . $k->image;
 
-                if (isset($k->images)) {
-                    $k->images = json_decode($k->images, true);
-                    if ($k->images) {
-                        $k->images = array_map(function ($image) {
-                            return asset("public/upload/doctors") . '/' . $image;
-                        }, $k->images);
+                    if (isset($k->images)) {
+                        $k->images = json_decode($k->images, true);
+                        if ($k->images) {
+                            $k->images = array_map(function ($image) {
+                                return asset("public/upload/doctors") . '/' . $image;
+                            }, $k->images);
+                        }
                     }
+
+                    unset($k->department_id);
                 }
-
-                unset($k->department_id);
+                $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+            } else {
+                $response = array("status" => 0, "msg" => "No Result Found");
             }
-            $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
-        } else {
-            $response = array("status" => 0, "msg" => "No Result Found");
-        }
 
+        }
+        return json_encode($response, JSON_NUMERIC_CHECK);
     }
-    return json_encode($response, JSON_NUMERIC_CHECK);
-}
 
 
     public function postregisterpatient(Request $request)
@@ -1521,7 +1804,7 @@ public function nearbydoctor(Request $request)
             $response['register'] = $message;
         } else {
             $getuser = Patient::where("phone", $request->get("phone"))->first();
-            if (empty ($getuser)) { //update token
+            if (empty($getuser)) { //update token
 
                 $getemail = Patient::where("email", $request->get("email"))->first();
                 if ($getemail) {
@@ -1825,7 +2108,7 @@ public function nearbydoctor(Request $request)
             $response['register'] = $message;
         } else {
             $getuser = Doctors::where("email", $request->get("email"))->first();
-            if (empty ($getuser)) { //update token
+            if (empty($getuser)) { //update token
                 $login_field = "";
                 $user_id = "";
                 $connectycube_password = "";
@@ -2073,7 +2356,7 @@ public function nearbydoctor(Request $request)
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'doctor_id' => 'required|exists:doctors,id',
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+            'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096', // Adjust max file size as needed
         ]);
 
         // If validation fails, return error response
@@ -2113,10 +2396,10 @@ public function nearbydoctor(Request $request)
         // Validate the incoming request data
         $validator = Validator::make($request->all(), [
             'doctor_id' => 'required|exists:doctors,id',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', // Adjust max file size as needed
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:4096', // Adjust max file size as needed
             'changed_indexes.*' => 'nullable|integer', // Array of changed indexes
         ]);
-    
+
         // If validation fails, return error response
         if ($validator->fails()) {
             return response()->json([
@@ -2125,18 +2408,18 @@ public function nearbydoctor(Request $request)
                 'errors' => $validator->errors()->all()
             ], 400);
         }
-    
+
         // Find the doctor by ID
         $doctor = Doctors::find($request->doctor_id);
-    
+
         // If doctor not found, return error response
         if (!$doctor) {
             return response()->json(['error' => 'Doctor not found'], 404);
         }
-    
+
         // Handle image uploads
         $images = json_decode($doctor->images, true) ?? [];
-    
+
         // Process each uploaded image
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $index => $image) {
@@ -2162,17 +2445,17 @@ public function nearbydoctor(Request $request)
                     $images[] = $imageName;
                 }
             }
-    
+
             // Update doctor's images field
             $doctor->images = json_encode($images);
             $doctor->save();
-    
+
             return response()->json(['success' => true, 'message' => 'Images updated successfully', 'data' => $doctor], 200);
         }
-    
+
         return response()->json(['error' => 'No images provided'], 400);
     }
-    
+
 
 
     public function deleteImage(Request $request)
@@ -2247,7 +2530,7 @@ public function nearbydoctor(Request $request)
         $images = json_decode($doctor->images, true) ?? [];
 
         // Check if the index exists in the images array
-        if (isset ($images[$request->index])) {
+        if (isset($images[$request->index])) {
             // Delete the image file
             $imagePath = public_path('upload/doctors/' . $images[$request->index]);
             if (file_exists($imagePath)) {
@@ -2284,7 +2567,7 @@ public function nearbydoctor(Request $request)
 
         // Modify the image URL based on your actual storage path
         $imageURL = null;
-        if (!empty ($doctor->image)) {
+        if (!empty($doctor->image)) {
             $imageURL = asset('public/upload/doctors') . '/' . $doctor->image;
         }
 
@@ -2311,7 +2594,7 @@ public function nearbydoctor(Request $request)
         $images = json_decode($doctor->images);
 
         // Check if images field is not empty and is an array
-        if (!empty ($images) && is_array($images)) {
+        if (!empty($images) && is_array($images)) {
             // Iterate over each image filename and construct the image URLs
             foreach ($images as $image) {
                 $imageURLs[] = asset('public/upload/doctors') . '/' . $image;
@@ -2348,7 +2631,7 @@ public function nearbydoctor(Request $request)
             $response['register'] = $message;
         } else {
             $getdetail = Doctors::find($request->get("doctor_id"));
-            if (empty ($getdetail)) {
+            if (empty($getdetail)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
@@ -2468,7 +2751,7 @@ public function nearbydoctor(Request $request)
                     $main[] = $slotlist;
                 }
             }
-            if (empty ($slotlist)) {
+            if (empty($slotlist)) {
                 $response['success'] = "0";
                 $response['register'] = "Slot Not Found";
             } else {
@@ -2581,8 +2864,8 @@ public function nearbydoctor(Request $request)
                     if ($doctors) {
                         $d->name = $doctors->name;
                         $d->address = $doctors->address;
-                        $d->image = isset ($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
-                        $d->department_name = isset ($department) ? $department->name : "";
+                        $d->image = isset($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
+                        $d->department_name = isset($department) ? $department->name : "";
                     } else {
                         $d->name = "";
                         $d->address = "";
@@ -2653,8 +2936,8 @@ public function nearbydoctor(Request $request)
                     if ($doctors) {
                         $d->name = $doctors->name;
                         $d->address = $doctors->address;
-                        $d->image = isset ($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
-                        $d->department_name = isset ($department) ? $department->name : "";
+                        $d->image = isset($doctors->image) ? asset('public/upload/doctors') . '/' . $doctors->image : "";
+                        $d->department_name = isset($department) ? $department->name : "";
                     } else {
                         $d->name = "";
                         $d->address = "";
@@ -2717,11 +3000,11 @@ public function nearbydoctor(Request $request)
                 $main_array = array();
                 foreach ($data as $d) {
                     $ls = array();
-                    $ls['name'] = isset ($d->patientls->name) ? $d->patientls->name : "";
-                    $ls['rating'] = isset ($d->rating) ? $d->rating : "";
-                    $ls['description'] = isset ($d->description) ? $d->description : "";
-                    $ls['image'] = isset ($d->patientls->profile_pic) ? asset('public/upload/profile') . '/' . $d->patientls->profile_pic : "";
-                    $ls['phone'] = isset ($d->patientls->phone) ? $d->phone : "";
+                    $ls['name'] = isset($d->patientls->name) ? $d->patientls->name : "";
+                    $ls['rating'] = isset($d->rating) ? $d->rating : "";
+                    $ls['description'] = isset($d->description) ? $d->description : "";
+                    $ls['image'] = isset($d->patientls->profile_pic) ? asset('public/upload/profile') . '/' . $d->patientls->profile_pic : "";
+                    $ls['phone'] = isset($d->patientls->phone) ? $d->phone : "";
                     $main_array[] = $ls;
                 }
 
@@ -2762,7 +3045,7 @@ public function nearbydoctor(Request $request)
                     $user = Patient::find($d->user_id);
                     if ($user) {
                         $d->name = $user->name;
-                        $d->image = isset ($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
+                        $d->image = isset($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
                     } else {
                         $d->name = "";
                         $d->image = "";
@@ -2822,7 +3105,7 @@ public function nearbydoctor(Request $request)
                     $user = Patient::find($d->user_id);
                     if ($user) {
                         $d->name = $user->name;
-                        $d->image = isset ($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
+                        $d->image = isset($user->profile_pic) ? asset('public/upload/profile') . '/' . $user->profile_pic : "";
                     } else {
                         $d->name = "";
                         $d->image = "";
@@ -2876,12 +3159,12 @@ public function nearbydoctor(Request $request)
             // echo "<pre>";
             // print_r($data);
             // die();
-            if (empty ($data)) {
+            if (empty($data)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
                 $d = Services::find($data->department_id);
-                $data->department_name = isset ($d) ? $d->name : "";
+                $data->department_name = isset($d) ? $d->name : "";
                 unset($data->department_id);
                 // if (isset($data->image) && !empty($data->image))
                 // {
@@ -2889,7 +3172,7 @@ public function nearbydoctor(Request $request)
                 // }else{
                 //   $data->image = 'user.png';
                 // }
-                if (isset ($data->images)) {
+                if (isset($data->images)) {
                     // Convert the images field value from JSON to an array
                     $data->images = json_decode($data->images, true);
 
@@ -2905,12 +3188,12 @@ public function nearbydoctor(Request $request)
 
                 $mysubscriptionlist = Subscriber::where('doctor_id', $request->get("doctor_id"))->where("status", '2')->orderby('id', 'DESC')->first();
 
-                if (isset ($mysubscriptionlist)) {
+                if (isset($mysubscriptionlist)) {
                     $mysubscriptionlist->subscription_data = Subscription::find($mysubscriptionlist->subscription_id);
 
 
                     $datetime = new DateTime($mysubscriptionlist->date);
-                    if (isset ($mysubscriptionlist->subscription_data)) {
+                    if (isset($mysubscriptionlist->subscription_data)) {
                         $month = $mysubscriptionlist->subscription_data->month;
                         $datetime->modify('+' . $month . ' month');
                         $date = $datetime->format('Y-m-d H:i:s');
@@ -3124,18 +3407,18 @@ public function nearbydoctor(Request $request)
             $ls = array();
             if ($data) {
                 if ($request->get("type") == 1) { //patients
-                    $ls['doctor_image'] = isset ($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
-                    $ls['doctor_name'] = isset ($data->doctorls) ? $data->doctorls->name : "";
-                    $ls['user_image'] = isset ($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
-                    $ls['user_name'] = isset ($data->patientls) ? $data->patientls->name : "";
+                    $ls['doctor_image'] = isset($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
+                    $ls['doctor_name'] = isset($data->doctorls) ? $data->doctorls->name : "";
+                    $ls['user_image'] = isset($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
+                    $ls['user_name'] = isset($data->patientls) ? $data->patientls->name : "";
                     $ls['status'] = $data->status;
                     $ls['doctor_id'] = $data->doctor_id;
                     $ls['user_id'] = $data->user_id;
                     $ls['date'] = $data->date;
                     $ls['slot'] = $data->slot_name;
-                    $ls['phone'] = isset ($data->doctorls) ? $data->doctorls->phoneno : "";
+                    $ls['phone'] = isset($data->doctorls) ? $data->doctorls->phoneno : "";
                     ;
-                    $ls['email'] = isset ($data->doctorls) ? $data->doctorls->email : "";
+                    $ls['email'] = isset($data->doctorls) ? $data->doctorls->email : "";
                     ;
                     $ls['description'] = $data->user_description;
                     $ls['connectycube_user_id'] = $data->doctorls->connectycube_user_id;
@@ -3183,10 +3466,10 @@ public function nearbydoctor(Request $request)
 
 
                 } else { //doctor
-                    $ls['user_image'] = isset ($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
-                    $ls['user_name'] = isset ($data->patientls) ? $data->patientls->name : "";
-                    $ls['doctor_name'] = isset ($data->doctorls) ? $data->doctorls->name : "";
-                    $ls['doctor_image'] = isset ($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
+                    $ls['user_image'] = isset($data->patientls->profile_pic) ? asset("public/upload/profile") . '/' . $data->patientls->profile_pic : "";
+                    $ls['user_name'] = isset($data->patientls) ? $data->patientls->name : "";
+                    $ls['doctor_name'] = isset($data->doctorls) ? $data->doctorls->name : "";
+                    $ls['doctor_image'] = isset($data->doctorls->image) ? asset("public/upload/doctors") . '/' . $data->doctorls->image : "";
 
                     $ls['status'] = $data->status;
                     $ls['date'] = $data->date;
@@ -3194,7 +3477,7 @@ public function nearbydoctor(Request $request)
                     $ls['user_id'] = $data->user_id;
                     $ls['slot'] = $data->slot_name;
                     $ls['phone'] = $data->phone;
-                    $ls['email'] = isset ($data->patientls) ? $data->patientls->email : "";
+                    $ls['email'] = isset($data->patientls) ? $data->patientls->email : "";
                     $ls['connectycube_user_id'] = $data->patientls->connectycube_user_id;
                     $ls['description'] = $data->user_description;
                     $ls['id'] = $data->id;
@@ -3663,7 +3946,7 @@ public function nearbydoctor(Request $request)
         } else {
             $data = Doctors::find($request->get("doctor_id"));
 
-            if (empty ($data)) {
+            if (empty($data)) {
                 $response['success'] = "0";
                 $response['register'] = "Doctor Not Found";
             } else {
@@ -3706,7 +3989,7 @@ public function nearbydoctor(Request $request)
         } else {
             $data1 = Patient::find($request->get("id"));
 
-            if (empty ($data1)) {
+            if (empty($data1)) {
                 $response['success'] = "0";
                 $response['register'] = "Patient Not Found";
             } else {
@@ -3975,7 +4258,7 @@ public function nearbydoctor(Request $request)
                 $result = curl_exec($ch);
                 //echo "<pre>";print_r($result);exit;
                 if ($result === FALSE) {
-                    die ('Curl failed: ' . curl_error($ch));
+                    die('Curl failed: ' . curl_error($ch));
                 }
                 curl_close($ch);
                 $response[] = json_decode($result, true);
@@ -4036,7 +4319,7 @@ public function nearbydoctor(Request $request)
                 curl_setopt($ch, CURLOPT_POSTFIELDS, $json);
                 $result = curl_exec($ch);
                 if ($result === FALSE) {
-                    die ('Curl failed: ' . curl_error($ch));
+                    die('Curl failed: ' . curl_error($ch));
                 }
                 curl_close($ch);
                 $response[] = json_decode($result, true);
@@ -4232,7 +4515,7 @@ public function nearbydoctor(Request $request)
         } else {
             $date = $request->get("date");
             $data = Doctor_Hoilday::find($request->get("id"));
-            if (!empty ($data)) {
+            if (!empty($data)) {
                 $data->delete();
                 $response['success'] = "1";
                 $response['msg'] = "Holiday Delete Successfully";
@@ -4269,7 +4552,7 @@ public function nearbydoctor(Request $request)
             $date = $request->get("date");
             $data = Doctor_Hoilday::where("start_date", "<=", $date)->where("end_date", ">=", $date)->where("doctor_id", $request->get("doctor_id"))->first();
             // echo "<pre>";print_r($data);exit;
-            if (empty ($data)) {
+            if (empty($data)) {
                 $response['success'] = "1";
                 $response['msg'] = "Working Day";
             } else {
@@ -4433,7 +4716,7 @@ public function nearbydoctor(Request $request)
 
         $speciality = Services::select('id', 'name', 'icon')->get();
 
-        if (!empty ($request->get("user_id"))) {
+        if (!empty($request->get("user_id"))) {
             $user_id = $request->get("user_id");
         } else {
             $user_id = 0;
