@@ -39,6 +39,14 @@ Route::any("update_amount_info", [ApiController::class, "updateAmountInformation
 Route::any("get_amount_info", [ApiController::class, "getAmountInfoByCurrency"]);
 
 
+Route::any("get_direct_booking", [ApiController::class, "getDirectBookingByRecipientId"]);
+Route::any("accept_direct_booking", [ApiController::class, "acceptDirectBooking"]);
+Route::any("reject_direct_booking", [ApiController::class, "rejectDirectBooking"]);
+Route::any("check_direct_booking", [ApiController::class, "checkSameRowDirectBooking"]); 
+Route::any("check_accept_booking", [ApiController::class, "checkSameRowAcceptBooking"]); 
+Route::any("check_reject_booking", [ApiController::class, "checkSameRowRejectBooking"]); 
+
+
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
 Route::any("updateName", [ApiController::class, "updateName"]);
 Route::any("updateEmail", [ApiController::class, "updateEmail"]);
