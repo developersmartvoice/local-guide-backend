@@ -42,9 +42,15 @@ Route::any("get_amount_info", [ApiController::class, "getAmountInfoByCurrency"])
 Route::any("get_direct_booking", [ApiController::class, "getDirectBookingByRecipientId"]);
 Route::any("accept_direct_booking", [ApiController::class, "acceptDirectBooking"]);
 Route::any("reject_direct_booking", [ApiController::class, "rejectDirectBooking"]);
-Route::any("check_direct_booking", [ApiController::class, "checkSameRowDirectBooking"]); 
-Route::any("check_accept_booking", [ApiController::class, "checkSameRowAcceptBooking"]); 
-Route::any("check_reject_booking", [ApiController::class, "checkSameRowRejectBooking"]); 
+Route::any("check_direct_booking", [ApiController::class, "checkSameRowDirectBooking"]);
+Route::any("check_accept_booking", [ApiController::class, "checkSameRowAcceptBooking"]);
+Route::any("check_reject_booking", [ApiController::class, "checkSameRowRejectBooking"]);
+
+
+Route::any("get_doctor_id", [ApiController::class, "getDoctorIdByEmail"]);
+Route::any("get_latest_code", [ApiController::class, "getLatestCodeByUserId"]);
+Route::any("get_connectcube_id", [ApiController::class, "findConnectyCubeIdByEmail"]);
+Route::any("change_password_email", [ApiController::class, "changePasswordByEmail"]);
 
 
 Route::any("searchdoctor", [ApiController::class, "showsearchdoctor"]);
