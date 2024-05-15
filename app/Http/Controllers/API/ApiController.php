@@ -454,27 +454,33 @@ class ApiController extends Controller
         $directBooking->save();
 
         // // Fetch sender details
-        // $sender = Doctors::find($request->sender_id);
-        // $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
+        $sender = Doctors::find($request->sender_id);
+        $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
 
         // // Fetch recipient details
-        // $recipient = Doctors::find($request->recipient_id);
-        // $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
+        $recipient = Doctors::find($request->recipient_id);
+        $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
+
+        // // Fetch sender's device token
+        $senderTokenData = TokenData::where('doctor_id', $request->sender_id)->get(['token', 'type']);
+        $senderDeviceTokens = $senderTokenData->toArray();
+
 
         // // Fetch recipient's device token
-        // $recipientTokenData = TokenData::where('doctor_id', $request->recipient_id)->get(['token', 'type']);
-        // $recipientDeviceTokens = $recipientTokenData->toArray();
+        $recipientTokenData = TokenData::where('doctor_id', $request->recipient_id)->get(['token', 'type']);
+        $recipientDeviceTokens = $recipientTokenData->toArray();
 
         // // Get connectycube_id of recipient
         // $connectycubeId = $recipient->connectycube_user_id;
 
         return response()->json([
             'message' => 'Direct booking created successfully',
-            'direct_booking' => $directBooking,
+            // 'direct_booking' => $directBooking,
             // 'sender_image' => $senderImage,
             // 'recipient_image' => $recipientImage,
             // 'connectycube_id' => $connectycubeId,
-            // 'device_token' => $recipientDeviceTokens
+            'sender_device_token' => $senderDeviceTokens,
+            'recipient_device_token' => $recipientDeviceTokens
         ], 200);
     }
 
@@ -4337,69 +4343,129 @@ class ApiController extends Controller
         return 0;
     }
 
+    // public function forgotpassword(Request $request)
+    // {
+    //     $response = array("success" => "0", "msg" => "Validation error");
+    //     $rules = [
+    //         'type' => 'required',
+    //         'email' => 'required'
+    //     ];
+
+    //     $messages = array(
+    //         'type.required' => "type is required",
+    //         'email.required' => "email is required"
+    //     );
+    //     $validator = Validator::make($request->all(), $rules, $messages);
+    //     if ($validator->fails()) {
+    //         $message = '';
+    //         $messages_l = json_decode(json_encode($validator->messages()), true);
+    //         foreach ($messages_l as $msg) {
+    //             $message .= $msg[0] . ", ";
+    //         }
+    //         $response['register'] = $message;
+    //     } else {
+    //         if ($request->get("type") == 1) { //patient
+    //             $checkmobile = Patient::where("email", $request->get("email"))->first();
+    //         } else { // doctor
+    //             $checkmobile = Doctors::where("email", $request->get("email"))->first();
+    //         }
+    //         if ($checkmobile) {
+    //             $code = mt_rand(100000, 999999);
+    //             $store = array();
+    //             $store['email'] = $checkmobile->email;
+    //             $store['name'] = $checkmobile->name;
+    //             $store['code'] = $code;
+    //             $add = new ResetPassword();
+    //             $add->user_id = $checkmobile->id;
+    //             $add->code = $code;
+    //             $add->type = $request->get("type");
+    //             $add->save();
+
+    //             Mail::send('email.reset_password', ['user' => $store], function ($message) use ($store) {
+    //                 $message->to($store['email'], $store['name'])->subject(__("message.System Name"));
+    //             });
+
+    //             exit();
+    //             try {
+    //                 $result = Mail::send('email.reset_password', ['user' => $store], function ($message) use ($store) {
+    //                     $message->to($store['email'], $store['name'])->subject(__("message.System Name"));
+    //                 });
+
+    //             } catch (\Exception $e) {
+    //             }
+
+    //             $response['success'] = "1";
+    //             $response['msg'] = "Mail Send Successfully";
+
+    //         } else {
+    //             $response['success'] = "0";
+    //             $response['msg'] = "Email Not Found";
+
+    //         }
+
+    //     }
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+
+    // }
+
     public function forgotpassword(Request $request)
     {
-        $response = array("success" => "0", "msg" => "Validation error");
+        $response = array("success" => 0, "msg" => "Validation error");
         $rules = [
             'type' => 'required',
-            'email' => 'required'
+            'email' => 'required|email' // Ensure email format is valid
         ];
 
-        $messages = array(
-            'type.required' => "type is required",
-            'email.required' => "email is required"
-        );
+        $messages = [
+            'type.required' => "Type is required",
+            'email.required' => "Email is required",
+            'email.email' => "Invalid email format"
+        ];
+
         $validator = Validator::make($request->all(), $rules, $messages);
+
         if ($validator->fails()) {
-            $message = '';
-            $messages_l = json_decode(json_encode($validator->messages()), true);
-            foreach ($messages_l as $msg) {
-                $message .= $msg[0] . ", ";
-            }
-            $response['register'] = $message;
+            $response['msg'] = $validator->errors()->first();
         } else {
-            if ($request->get("type") == 1) { //patient
-                $checkmobile = Patient::where("email", $request->get("email"))->first();
+            $userType = $request->get("type");
+            $email = $request->get("email");
+
+            // Determine user type and fetch user based on email
+            if ($userType == 1) { //patient
+                $user = Patient::where("email", $email)->first();
             } else { // doctor
-                $checkmobile = Doctors::where("email", $request->get("email"))->first();
+                $user = Doctors::where("email", $email)->first();
             }
-            if ($checkmobile) {
+
+            if ($user) {
+                // Generate a verification code
                 $code = mt_rand(100000, 999999);
-                $store = array();
-                $store['email'] = $checkmobile->email;
-                $store['name'] = $checkmobile->name;
-                $store['code'] = $code;
-                $add = new ResetPassword();
-                $add->user_id = $checkmobile->id;
-                $add->code = $code;
-                $add->type = $request->get("type");
-                $add->save();
 
-                Mail::send('email.reset_password', ['user' => $store], function ($message) use ($store) {
-                    $message->to($store['email'], $store['name'])->subject(__("message.System Name"));
-                });
+                // Store verification code in database
+                $resetPassword = new ResetPassword();
+                $resetPassword->user_id = $user->id;
+                $resetPassword->code = $code;
+                $resetPassword->type = $userType;
+                $resetPassword->save();
 
-                exit();
+                // Send email with verification code
                 try {
-                    $result = Mail::send('email.reset_password', ['user' => $store], function ($message) use ($store) {
-                        $message->to($store['email'], $store['name'])->subject(__("message.System Name"));
+                    Mail::raw("Your verification code is: $code", function ($message) use ($email) {
+                        $message->to($email)->subject("Reset Password Verification");
                     });
 
+                    $response['success'] = 1;
+                    $response['msg'] = "Mail sent successfully";
+                    $response['code'] = $code; // Include the code in the response
                 } catch (\Exception $e) {
+                    $response['msg'] = "Error sending email: " . $e->getMessage();
                 }
-
-                $response['success'] = "1";
-                $response['msg'] = "Mail Send Successfully";
-
             } else {
-                $response['success'] = "0";
-                $response['msg'] = "Email Not Found";
-
+                $response['msg'] = "Email not found";
             }
-
         }
-        return json_encode($response, JSON_NUMERIC_CHECK);
 
+        return response()->json($response);
     }
 
     public function getholiday(Request $request)
@@ -4849,6 +4915,116 @@ class ApiController extends Controller
         return Response::json($response);
 
         // return response()->json($tripGuides, 200);
+    }
+
+
+    public function getDoctorIdByEmail(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        // Retrieve email from the request
+        $email = $request->input('email');
+
+        // Find the doctor by email
+        $doctor = Doctors::where('email', $email)->first();
+
+        if ($doctor) {
+            // Return the doctor's ID if found
+            return response()->json(['status' => 1, 'doctor_id' => $doctor->id]);
+        } else {
+            // Return error if doctor not found
+            return response()->json(['status' => 0, 'error' => 'Doctor not found'], 404);
+        }
+    }
+
+
+    public function getLatestCodeByUserId(Request $request)
+    {
+        // Validate the request
+        $validator = Validator::make($request->all(), [
+            'user_id' => 'required|integer|string',
+        ]);
+
+        if ($validator->fails()) {
+            // Return validation error response
+            return response()->json(['error' => $validator->errors()->first()], 400);
+        }
+
+        // Retrieve user_id from the request
+        $user_id = $request->input('user_id');
+
+        // Find the latest reset password record by user_id
+        $resetPassword = Resetpassword::where('user_id', $user_id)
+            ->latest()
+            ->first();
+
+        if ($resetPassword) {
+            // Return the latest code if found
+            return response()->json(['status' => 1, 'latest_code' => $resetPassword->code]);
+        } else {
+            // Return error if reset password record not found
+            return response()->json(['status' => 0, 'error' => 'No reset password record found'], 404);
+        }
+    }
+
+    public function findConnectyCubeIdByEmail(Request $request)
+    {
+        // Validate the request parameters
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        // Retrieve the email from the request
+        $email = $request->input('email');
+
+        // Search for the doctor by email
+        $doctor = Doctors::where('email', $email)->first();
+
+        if ($doctor) {
+            // If doctor is found, return the specified fields
+            return response()->json([
+                // 'password' => $doctor->password,
+                'status' => 1,
+                'login_id' => $doctor->login_id,
+                'connectycube_user_id' => $doctor->connectycube_user_id,
+                'connectycube_password' => $doctor->connectycube_password,
+            ]);
+        } else {
+            // If doctor is not found, return an error response
+            return response()->json(['error' => 'Doctor not found'], 404);
+        }
+    }
+
+    public function changePasswordByEmail(Request $request)
+    {
+        // Validate the request parameters
+        $request->validate([
+            'email' => 'required|email',
+            'new_password' => 'required', // You can adjust the validation rules as needed
+        ]);
+
+        // Retrieve the email and new password from the request
+        $email = $request->input('email');
+        $newPassword = $request->input('new_password');
+
+        // Search for the doctor by email
+        $doctor = Doctors::where('email', $email)->first();
+
+        if ($doctor) {
+            // If doctor is found, update the password
+            $doctor->password = $newPassword;
+            $doctor->connectycube_password = $newPassword;
+            $doctor->save();
+
+            // Return a success response
+            return response()->json(['status' => 1, 'message' => 'Password changed successfully']);
+        } else {
+            // If doctor is not found, return an error response
+            return response()->json(['status' => 0, 'error' => 'Doctor not found'], 404);
+        }
     }
 }
 
