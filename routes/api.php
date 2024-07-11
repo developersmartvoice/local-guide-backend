@@ -39,6 +39,16 @@ Route::any("update_amount_info", [ApiController::class, "updateAmountInformation
 Route::any("get_amount_info", [ApiController::class, "getAmountInfoByCurrency"]);
 
 
+Route::any("set_lat_lon", [ApiController::class, "updateLocation"]);
+Route::any("store_referral_info", [ApiController::class, "ReferralInfoStore"]);
+Route::any("generate_store_ref", [ApiController::class, "generateAndStoreReferralCode"]);
+Route::any("get_ref_code", [ApiController::class, "getReferralCode"]);
+Route::any("get_id_by_user_id", [ApiController::class, "getReferredIdbyUserId"]);
+Route::any("get_id_by_ref_code", [ApiController::class, "getDoctorIdByReferralCode"]);
+Route::any("get_all_balances", [ApiController::class, "getEarnings"]);
+Route::any("set_referrered_balance", [ApiController::class, "setReferredUserEarnings"]);
+
+
 Route::any("get_direct_booking", [ApiController::class, "getDirectBookingByRecipientId"]);
 Route::any("accept_direct_booking", [ApiController::class, "acceptDirectBooking"]);
 Route::any("reject_direct_booking", [ApiController::class, "rejectDirectBooking"]);

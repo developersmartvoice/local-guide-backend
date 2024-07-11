@@ -45,7 +45,13 @@ use App\Models\AmountInfo;
 use App\Models\MembershipDetail;
 use App\Models\AcceptedDirectBooking;
 use App\Models\RejectedDirectBooking;
+use App\Models\ReferralInfo;
+use App\Models\ReferredUserEarnings;
+use App\Models\Withdrawal;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
+// use Illuminate\Support\Facades\DB;
+// use Illuminate\Support\Facades\Validator;
 use Hash;
 use Mail;
 use DateTime;
@@ -455,10 +461,12 @@ class ApiController extends Controller
 
         // // Fetch sender details
         $sender = Doctors::find($request->sender_id);
+        $senderName = $sender->name;
         $senderImage = asset('public/upload/doctors') . '/' . $sender->image; // Assuming the image path
 
         // // Fetch recipient details
         $recipient = Doctors::find($request->recipient_id);
+        $recipientName = $recipient->name;
         $recipientImage = asset('public/upload/doctors') . '/' . $recipient->image; // Assuming the image path
 
         // // Fetch sender's device token
@@ -475,6 +483,8 @@ class ApiController extends Controller
 
         return response()->json([
             'message' => 'Direct booking created successfully',
+            'sender_name' => $senderName,
+            'recipient_name' => $recipientName,
             // 'direct_booking' => $directBooking,
             // 'sender_image' => $senderImage,
             // 'recipient_image' => $recipientImage,
@@ -1383,90 +1393,183 @@ class ApiController extends Controller
 
 
 
+    // public function filterdoctor(Request $request)
+    // {
+    //     $response = array("status" => "0", "register" => "Validation error");
+
+
+    //     // Start building the query
+    //     $query = Doctors::query();
+
+
+    //     if ($request->has('consultation_fees')) {
+    //         $requestedConsultationFees = (double) $request->get('consultation_fees');
+
+    //         $query->where(function ($query) use ($requestedConsultationFees) {
+    //             $query->whereRaw('CAST(consultation_fees AS DOUBLE) <= ?', [$requestedConsultationFees]);
+    //         });
+    //     }
+
+    //     if ($request->has('gender')) {
+    //         $query->where('gender', '=', $request->get('gender'));
+    //     }
+
+    //     if ($request->has('languages')) {
+    //         // Assuming $data is fetched from the database
+    //         $data = Doctors::all(); // Fetch data from your database
+
+    //         $languages = $request->get('languages');
+    //         $wordsToCount = explode(",", $languages);
+    //         $counts = [];
+
+    //         // Count occurrences of each word in the dataset
+    //         foreach ($data as $row) {
+    //             $words = explode(",", $row->languages); // Assuming 'languages' is the column name
+    //             foreach ($words as $word) {
+    //                 if (in_array($word, $wordsToCount)) {
+    //                     if (!isset($counts[$word])) {
+    //                         $counts[$word] = 1;
+    //                     } else {
+    //                         $counts[$word]++;
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         // Constructing the query condition based on the counts
+    //         $query->where(function ($query) use ($counts) {
+    //             foreach ($counts as $word => $count) {
+    //                 $query->orWhere('languages', 'like', '%' . $word . '%');
+    //             }
+    //         });
+    //     }
+
+
+
+    //     if ($request->has('services')) {
+    //         // Assuming $data is fetched from the database
+    //         $data = Doctors::all(); // Fetch data from your database
+
+    //         $service = $request->get('services');
+    //         $wordsToCount = explode(",", $service);
+    //         $counts = [];
+
+    //         // Count occurrences of each word in the dataset
+    //         foreach ($data as $row) {
+    //             $words = explode(",", $row->services); // Assuming 'services' is the column name
+    //             foreach ($words as $word) {
+    //                 if (in_array($word, $wordsToCount)) {
+    //                     if (!isset($counts[$word])) {
+    //                         $counts[$word] = 1;
+    //                     } else {
+    //                         $counts[$word]++;
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         // Constructing the query condition based on the counts
+    //         $query->where(function ($query) use ($counts) {
+    //             foreach ($counts as $word => $count) {
+    //                 $query->orWhere('services', 'like', '%' . $word . '%');
+    //             }
+    //         });
+    //     }
+
+
+
+    //     // Execute the query
+    //     $data = $query->select(
+    //         "id",
+    //         "name",
+    //         "languages",
+    //         "address",
+    //         "image",
+    //         "images",
+    //         "aboutus",
+    //         "services",
+    //         "department_id",
+    //         "consultation_fees",
+    //         "city",
+    //         "motto",
+    //         DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
+    //         DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+    //     )->paginate(10);
+
+    //     if ($data) {
+    //         foreach ($data as $k) {
+    //             $dr = Services::find($k->department_id);
+    //             if ($dr) {
+    //                 $k->department_name = $dr->name;
+    //             } else {
+    //                 $k->department_name = "";
+    //             }
+    //             $k->image = asset('public/upload/doctors') . '/' . $k->image;
+    //             unset($k->department_id);
+    //         }
+    //         $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+    //     } else {
+    //         $response = array("status" => 0, "msg" => "No Result Found");
+    //     }
+
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+    // }
+
+
     public function filterdoctor(Request $request)
     {
-        $response = array("status" => "0", "register" => "Validation error");
+        $response = ["status" => "0", "register" => "Validation error"];
 
+        // Gather filter parameters
+        $filters = [];
+
+        if ($request->has('consultation_fees')) {
+            $filters['consultation_fees'] = (double) $request->get('consultation_fees');
+        }
+
+        if ($request->has('gender')) {
+            $filters['gender'] = $request->get('gender');
+        }
+
+        if ($request->has('languages')) {
+            $filters['languages'] = explode(",", $request->get('languages'));
+        }
+
+        if ($request->has('services')) {
+            $filters['services'] = explode(",", $request->get('services'));
+        }
 
         // Start building the query
         $query = Doctors::query();
 
-
-        if ($request->has('consultation_fees')) {
-            $requestedConsultationFees = (double) $request->get('consultation_fees');
-
-            $query->where(function ($query) use ($requestedConsultationFees) {
-                $query->whereRaw('CAST(consultation_fees AS DOUBLE) <= ?', [$requestedConsultationFees]);
-            });
+        // Apply filters dynamically
+        if (isset($filters['consultation_fees'])) {
+            $query->where('consultation_fees', '<=', $filters['consultation_fees']);
         }
 
-        if ($request->has('gender')) {
-            $query->where('gender', '=', $request->get('gender'));
+        if (isset($filters['gender'])) {
+            $query->where('gender', $filters['gender']);
         }
 
-        if ($request->has('languages')) {
-            // Assuming $data is fetched from the database
-            $data = Doctors::all(); // Fetch data from your database
-
-            $languages = $request->get('languages');
-            $wordsToCount = explode(",", $languages);
-            $counts = [];
-
-            // Count occurrences of each word in the dataset
-            foreach ($data as $row) {
-                $words = explode(",", $row->languages); // Assuming 'languages' is the column name
-                foreach ($words as $word) {
-                    if (in_array($word, $wordsToCount)) {
-                        if (!isset($counts[$word])) {
-                            $counts[$word] = 1;
-                        } else {
-                            $counts[$word]++;
-                        }
-                    }
-                }
-            }
-
-            // Constructing the query condition based on the counts
-            $query->where(function ($query) use ($counts) {
-                foreach ($counts as $word => $count) {
-                    $query->orWhere('languages', 'like', '%' . $word . '%');
+        if (isset($filters['languages'])) {
+            $languages = $filters['languages'];
+            $query->where(function ($query) use ($languages) {
+                foreach ($languages as $language) {
+                    $query->where('languages', 'like', '%' . $language . '%');
                 }
             });
+            $query->whereRaw('LENGTH(languages) - LENGTH(REPLACE(languages, ",", "")) + 1 = ?', [count($languages)]);
         }
 
-
-
-        if ($request->has('services')) {
-            // Assuming $data is fetched from the database
-            $data = Doctors::all(); // Fetch data from your database
-
-            $service = $request->get('services');
-            $wordsToCount = explode(",", $service);
-            $counts = [];
-
-            // Count occurrences of each word in the dataset
-            foreach ($data as $row) {
-                $words = explode(",", $row->services); // Assuming 'services' is the column name
-                foreach ($words as $word) {
-                    if (in_array($word, $wordsToCount)) {
-                        if (!isset($counts[$word])) {
-                            $counts[$word] = 1;
-                        } else {
-                            $counts[$word]++;
-                        }
-                    }
-                }
-            }
-
-            // Constructing the query condition based on the counts
-            $query->where(function ($query) use ($counts) {
-                foreach ($counts as $word => $count) {
-                    $query->orWhere('services', 'like', '%' . $word . '%');
+        if (isset($filters['services'])) {
+            $services = $filters['services'];
+            $query->where(function ($query) use ($services) {
+                foreach ($services as $service) {
+                    $query->where('services', 'like', '%' . $service . '%');
                 }
             });
+            $query->whereRaw('LENGTH(services) - LENGTH(REPLACE(services, ",", "")) + 1 = ?', [count($services)]);
         }
-
-
 
         // Execute the query
         $data = $query->select(
@@ -1482,66 +1585,127 @@ class ApiController extends Controller
             "consultation_fees",
             "city",
             "motto",
-            DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
+            DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
             DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
         )->paginate(10);
 
-        if ($data) {
+        if ($data->count() > 0) {
             foreach ($data as $k) {
-                $dr = Services::find($k->department_id);
-                if ($dr) {
-                    $k->department_name = $dr->name;
-                } else {
-                    $k->department_name = "";
-                }
+                $department = Services::find($k->department_id);
+                $k->department_name = isset($department) ? $department->name : "";
                 $k->image = asset('public/upload/doctors') . '/' . $k->image;
+
+                if (isset($k->images)) {
+                    $k->images = json_decode($k->images, true);
+                    if ($k->images) {
+                        $k->images = array_map(function ($image) {
+                            return asset("public/upload/doctors") . '/' . $image;
+                        }, $k->images);
+                    }
+                }
+
                 unset($k->department_id);
             }
-            $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+            $response = ["status" => 1, "msg" => "Search Result", "data" => $data];
         } else {
-            $response = array("status" => 0, "msg" => "No Result Found");
+            $response = ["status" => 0, "msg" => "No Result Found"];
         }
 
-        return json_encode($response, JSON_NUMERIC_CHECK);
+        return response()->json($response, 200, [], JSON_NUMERIC_CHECK);
     }
+
+
+
+
+
+
+
+    // public function deleteDoctor(Request $request)
+    // {
+    //     $response = array("success" => "0", "delete" => "Validation error");
+
+    //     $rules = [
+    //         'id' => 'required|exists:doctors,id',
+    //     ];
+
+    //     $messages = array(
+    //         'id.required' => "Doctor ID is required",
+    //         'id.exists' => "Invalid Doctor ID",
+    //     );
+
+    //     $validator = Validator::make($request->all(), $rules, $messages);
+
+    //     if ($validator->fails()) {
+    //         $message = '';
+    //         $messages_l = json_decode(json_encode($validator->messages()), true);
+    //         foreach ($messages_l as $msg) {
+    //             $message .= $msg[0] . ", ";
+    //         }
+    //         $response['delete'] = $message;
+    //     } else {
+    //         // Valid ID, proceed with deletion
+    //         $doctor = Doctors::find($request->get('id'));
+
+    //         if ($doctor) {
+    //             $doctor->delete();
+    //             $response['success'] = "1";
+    //             $response['delete'] = "User deleted successfully";
+    //         } else {
+    //             $response['delete'] = "User not found";
+    //         }
+    //     }
+
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+    // }
+
 
     public function deleteDoctor(Request $request)
     {
-        $response = array("success" => "0", "delete" => "Validation error");
+        $response = ["success" => "0", "delete" => "Validation error"];
 
         $rules = [
             'id' => 'required|exists:doctors,id',
         ];
 
-        $messages = array(
+        $messages = [
             'id.required' => "Doctor ID is required",
             'id.exists' => "Invalid Doctor ID",
-        );
+        ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
 
         if ($validator->fails()) {
-            $message = '';
-            $messages_l = json_decode(json_encode($validator->messages()), true);
-            foreach ($messages_l as $msg) {
-                $message .= $msg[0] . ", ";
-            }
-            $response['delete'] = $message;
+            $response['delete'] = implode(", ", $validator->errors()->all());
         } else {
-            // Valid ID, proceed with deletion
-            $doctor = Doctors::find($request->get('id'));
+            DB::beginTransaction();
+            try {
+                $doctorId = $request->get('id');
 
-            if ($doctor) {
-                $doctor->delete();
-                $response['success'] = "1";
-                $response['delete'] = "User deleted successfully";
-            } else {
-                $response['delete'] = "User not found";
+                // Delete related records in membership_details
+                DB::table('membership_details')->where('guide_id', $doctorId)->delete();
+
+                // Delete related records in order_id_info
+                DB::table('order_id_info')->where('guide_id', $doctorId)->delete();
+
+                // Now delete the doctor
+                $doctor = Doctors::find($doctorId);
+                if ($doctor) {
+                    $doctor->delete();
+                    DB::commit();
+                    $response = ["success" => "1", "delete" => "User deleted successfully"];
+                } else {
+                    DB::rollBack();
+                    $response['delete'] = "User not found";
+                }
+            } catch (\Exception $e) {
+                DB::rollBack();
+                $response['delete'] = "An error occurred: " . $e->getMessage();
             }
         }
 
-        return json_encode($response, JSON_NUMERIC_CHECK);
+        return response()->json($response);
     }
+
 
     public function storeOrderId(Request $request)
     {
@@ -1625,87 +1789,6 @@ class ApiController extends Controller
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // public function nearbydoctor(Request $request)
-    // {
-    //     $response = array("status" => "0", "register" => "Validation error");
-    //     $rules = [
-    //         'lat' => 'required',
-    //         'lon' => 'required'
-    //     ];
-    //     $messages = array(
-    //         'lat.required' => "lat is required",
-    //         'lon.required' => 'lon is requied'
-    //     );
-    //     $validator = Validator::make($request->all(), $rules, $messages);
-    //     if ($validator->fails()) {
-    //         $message = '';
-    //         $messages_l = json_decode(json_encode($validator->messages()), true);
-    //         foreach ($messages_l as $msg) {
-    //             $message .= $msg[0] . ", ";
-    //         }
-    //         $response['msg'] = $message;
-    //     } else {
-    //         $lat = $request->get("lat");
-    //         $lon = $request->get("lon");
-
-    //         $data = DB::table("doctors")
-    //             ->select(
-    //                 "doctors.id",
-    //                 "doctors.name",
-    //                 "doctors.address",
-    //                 "doctors.department_id",
-    //                 "doctors.image",
-    //                 "doctors.consultation_fees",
-    //                 "doctors.aboutus",
-    //                 "doctors.motto",
-    //                 "doctors.images",
-    //                 "doctors.city",
-    //                 DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
-    //                        * cos(radians(doctors.lat)) 
-    //                        * cos(radians(doctors.lon) - radians(" . $lon . ")) 
-    //                        + sin(radians(" . $lat . ")) 
-    //                        * sin(radians(doctors.lat))) AS distance"),
-    //                 DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
-    //                 DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
-    //             )
-    //             ->orderby('distance')->WhereNotNull("doctors.lat")->paginate(10);
-
-    //         if ($data) {
-
-    //             foreach ($data as $k) {
-    //                 //   $k->load('reviewls');
-    //                 $department = Services::find($k->department_id);
-    //                 $k->department_name = isset ($department) ? $department->name : "";
-    //                 $k->image = asset("public/upload/doctors") . '/' . $k->image;
-
-    //                 // Check if the 'images' property exists
-    //                 if (isset ($k->images)) {
-    //                     // Convert the images field value from JSON to an array
-    //                     $k->images = json_decode($k->images, true);
-
-    //                     // Add the full image URLs to the images array
-    //                     if ($k->images) {
-    //                         $k->images = array_map(function ($image) {
-    //                             return asset("public/upload/doctors") . '/' . $image;
-    //                         }, $k->images);
-    //                     }
-    //                 }
-
-    //                 unset($k->department_id);
-    //             }
-    //             $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
-    //         } else {
-    //             $response = array("status" => 0, "msg" => "No Result Found");
-    //         }
-
-    //     }
-    //     return json_encode($response, JSON_NUMERIC_CHECK);
-
-    // }
-
-
-    // use App\Models\Doctors; // Make sure to import the Doctors model
-
     public function nearbydoctor(Request $request)
     {
         $response = array("status" => "0", "register" => "Validation error");
@@ -1715,7 +1798,7 @@ class ApiController extends Controller
         ];
         $messages = array(
             'lat.required' => "lat is required",
-            'lon.required' => 'lon is required'
+            'lon.required' => 'lon is requied'
         );
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
@@ -1729,37 +1812,42 @@ class ApiController extends Controller
             $lat = $request->get("lat");
             $lon = $request->get("lon");
 
-            $data = Doctors::select(
-                "id",
-                "name",
-                "address",
-                "department_id",
-                "image",
-                "consultation_fees",
-                "aboutus",
-                "motto",
-                "images",
-                "city",
-                DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
-                       * cos(radians(lat)) 
-                       * cos(radians(lon) - radians(" . $lon . ")) 
-                       + sin(radians(" . $lat . ")) 
-                       * sin(radians(lat))) AS distance"),
-                DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
-                DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
-            )
-                ->orderby('distance')
-                ->whereNotNull("lat")
-                ->paginate(10);
+            $data = DB::table("doctors")
+                ->select(
+                    "doctors.id",
+                    "doctors.name",
+                    "doctors.address",
+                    "doctors.department_id",
+                    "doctors.image",
+                    "doctors.consultation_fees",
+                    "doctors.aboutus",
+                    "doctors.motto",
+                    "doctors.images",
+                    "doctors.city",
+                    DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
+                           * cos(radians(doctors.lat)) 
+                           * cos(radians(doctors.lon) - radians(" . $lon . ")) 
+                           + sin(radians(" . $lat . ")) 
+                           * sin(radians(doctors.lat))) AS distance"),
+                    DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgratting"),
+                    DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+                )
+                ->orderby('distance')->WhereNotNull("doctors.lat")->paginate(10);
 
-            if ($data->count() > 0) {
+            if ($data) {
+
                 foreach ($data as $k) {
+                    //   $k->load('reviewls');
                     $department = Services::find($k->department_id);
                     $k->department_name = isset($department) ? $department->name : "";
                     $k->image = asset("public/upload/doctors") . '/' . $k->image;
 
+                    // Check if the 'images' property exists
                     if (isset($k->images)) {
+                        // Convert the images field value from JSON to an array
                         $k->images = json_decode($k->images, true);
+
+                        // Add the full image URLs to the images array
                         if ($k->images) {
                             $k->images = array_map(function ($image) {
                                 return asset("public/upload/doctors") . '/' . $image;
@@ -1776,7 +1864,353 @@ class ApiController extends Controller
 
         }
         return json_encode($response, JSON_NUMERIC_CHECK);
+
     }
+
+
+    // use App\Models\Doctors; // Make sure to import the Doctors model
+
+    // public function nearbydoctor(Request $request)
+    // {
+    //     $response = array("status" => "0", "register" => "Validation error");
+    //     $rules = [
+    //         'lat' => 'required',
+    //         'lon' => 'required'
+    //     ];
+    //     $messages = array(
+    //         'lat.required' => "lat is required",
+    //         'lon.required' => 'lon is required'
+    //     );
+    //     $validator = Validator::make($request->all(), $rules, $messages);
+    //     if ($validator->fails()) {
+    //         $message = '';
+    //         $messages_l = json_decode(json_encode($validator->messages()), true);
+    //         foreach ($messages_l as $msg) {
+    //             $message .= $msg[0] . ", ";
+    //         }
+    //         $response['msg'] = $message;
+    //     } else {
+    //         $lat = $request->get("lat");
+    //         $lon = $request->get("lon");
+
+    //         $data = Doctors::select(
+    //             "id",
+    //             "name",
+    //             "address",
+    //             "department_id",
+    //             "image",
+    //             "consultation_fees",
+    //             "aboutus",
+    //             "motto",
+    //             "images",
+    //             "city",
+    //             DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
+    //                    * cos(radians(lat)) 
+    //                    * cos(radians(lon) - radians(" . $lon . ")) 
+    //                    + sin(radians(" . $lat . ")) 
+    //                    * sin(radians(lat))) AS distance"),
+    //             DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
+    //             DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+    //         )
+    //             // ->orderby('distance')
+    //             ->whereNotNull("lat")
+    //             ->distinct()
+    //             ->inRandomOrder()
+    //             ->paginate(10);
+
+    //         if ($data->count() > 0) {
+    //             foreach ($data as $k) {
+    //                 $department = Services::find($k->department_id);
+    //                 $k->department_name = isset($department) ? $department->name : "";
+    //                 $k->image = asset("public/upload/doctors") . '/' . $k->image;
+
+    //                 if (isset($k->images)) {
+    //                     $k->images = json_decode($k->images, true);
+    //                     if ($k->images) {
+    //                         $k->images = array_map(function ($image) {
+    //                             return asset("public/upload/doctors") . '/' . $image;
+    //                         }, $k->images);
+    //                     }
+    //                 }
+
+    //                 unset($k->department_id);
+    //             }
+    //             $response = array("status" => 1, "msg" => "Search Result", "data" => $data);
+    //         } else {
+    //             $response = array("status" => 0, "msg" => "No Result Found");
+    //         }
+
+    //     }
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+    // }
+
+
+
+    //     public function nearbydoctor(Request $request)
+// {
+//     $response = array("status" => "0", "register" => "Validation error");
+//     $rules = [
+//         'lat' => 'required',
+//         'lon' => 'required'
+//     ];
+//     $messages = array(
+//         'lat.required' => "lat is required",
+//         'lon.required' => 'lon is required'
+//     );
+//     $validator = Validator::make($request->all(), $rules, $messages);
+//     if ($validator->fails()) {
+//         $message = '';
+//         $messages_l = json_decode(json_encode($validator->messages()), true);
+//         foreach ($messages_l as $msg) {
+//             $message .= $msg[0] . ", ";
+//         }
+//         $response['msg'] = $message;
+//         return response()->json($response, 400, [], JSON_NUMERIC_CHECK); // Use a valid HTTP status code
+//     } else {
+//         $lat = $request->get("lat");
+//         $lon = $request->get("lon");
+
+    //         // Fetch all matching doctor IDs
+//         $doctorIDs = Doctors::select("id")
+//             ->whereNotNull("lat")
+//             ->get()
+//             ->pluck('id')
+//             ->toArray();
+
+    //         // Shuffle the IDs to ensure randomness
+//         shuffle($doctorIDs);
+
+    //         // Paginate the shuffled IDs
+//         $page = $request->get('page', 1); // Default to page 1 if not provided
+//         $perPage = 10;
+//         $offset = ($page - 1) * $perPage;
+
+    //         $pagedDoctorIDs = array_slice($doctorIDs, $offset, $perPage);
+
+    //         // Fetch doctor details for the paginated IDs
+//         $data = Doctors::select(
+//             "id",
+//             "name",
+//             "address",
+//             "department_id",
+//             "image",
+//             "consultation_fees",
+//             "aboutus",
+//             "motto",
+//             "images",
+//             "city",
+//             DB::raw("6371 * acos(cos(radians(" . $lat . ")) 
+//                    * cos(radians(lat)) 
+//                    * cos(radians(lon) - radians(" . $lon . ")) 
+//                    + sin(radians(" . $lat . ")) 
+//                    * sin(radians(lat))) AS distance"),
+//             DB::raw("(SELECT AVG(rating) FROM review WHERE doc_id = doctors.id) AS avgrating"),
+//             DB::raw("(SELECT COUNT(*) FROM review WHERE doc_id = doctors.id) AS total_review")
+//         )
+//             ->whereIn("id", $pagedDoctorIDs)
+//             ->get();
+
+    //         if ($data->count() > 0) {
+//             foreach ($data as $k) {
+//                 $department = Services::find($k->department_id);
+//                 $k->department_name = isset($department) ? $department->name : "";
+//                 $k->image = asset("public/upload/doctors") . '/' . $k->image;
+
+    //                 if (isset($k->images)) {
+//                     $k->images = json_decode($k->images, true);
+//                     if ($k->images) {
+//                         $k->images = array_map(function ($image) {
+//                             return asset("public/upload/doctors") . '/' . $image;
+//                         }, $k->images);
+//                     }
+//                 }
+
+    //                 unset($k->department_id);
+//             }
+
+    //             // Create a custom paginator
+//             $total = count($doctorIDs);
+//             $currentPage = $page;
+//             $paginatedData = new LengthAwarePaginator($data, $total, $perPage, $currentPage, [
+//                 'path' => $request->url(),
+//                 'query' => $request->query()
+//             ]);
+
+    //             $response = array("status" => 1, "msg" => "Search Result", "data" => $paginatedData);
+//             return response()->json($response, 200, [], JSON_NUMERIC_CHECK); // Use a valid HTTP status code
+//         } else {
+//             $response = array("status" => 0, "msg" => "No Result Found");
+//             return response()->json($response, 404, [], JSON_NUMERIC_CHECK); // Use a valid HTTP status code
+//         }
+//     }
+// }
+
+    public function setReferredUserEarnings(Request $request)
+    {
+        $referred_id = $request->input('referred_id');
+        $new_id = $request->input('user_id');
+        $currency = $request->input('currency');
+
+        // Retrieve the amount based on the currency
+        $amountInfo = AmountInfo::where('currency', $currency)->first();
+
+        if (!$amountInfo) {
+            return response()->json(['error' => 'Invalid currency provided'], 400);
+        }
+
+        // Calculate 15% of the amount
+        $amount = $amountInfo->amount;
+        $earnings = $amount * 0.15;
+
+        // Insert the new record into referred_user_earnings
+        ReferredUserEarnings::create([
+            'referred_id' => $referred_id,
+            'new_id' => $new_id,
+            'amount' => $earnings,
+            'currency' => $currency,
+        ]);
+
+        return response()->json(['success' => 'Earnings recorded successfully']);
+    }
+
+
+    public function getEarnings(Request $request)
+    {
+        $referredId = $request->input('referred_id');
+        $currentMonth = Carbon::now()->month;
+        $previousMonth = Carbon::now()->subMonth()->month;
+
+        $currentMonthEarnings = ReferredUserEarnings::where('referred_id', $referredId)
+            ->whereMonth('created_at', $currentMonth)
+            ->sum('amount');
+
+        $previousMonthEarnings = ReferredUserEarnings::where('referred_id', $referredId)
+            ->whereMonth('created_at', $previousMonth)
+            ->sum('amount');
+
+        $totalEarnings = ReferredUserEarnings::where('referred_id', $referredId)
+            ->sum('amount');
+
+        // Get last withdrawal date
+        $lastWithdrawal = Withdrawal::where('referred_id', $referredId)
+            ->latest('created_at')
+            ->first();
+
+        // Calculate withdrawal balance
+        if ($lastWithdrawal) {
+            $lastWithdrawalDate = new DateTime($lastWithdrawal->created_at);
+            $now = new DateTime();
+            $interval = $now->diff($lastWithdrawalDate);
+
+            if ($interval->days < 30) {
+                // If the last withdrawal was within the last 30 days, only allow current month earnings to be withdrawn
+                $withdrawalBalance = $currentMonthEarnings;
+            } else {
+                // If the last withdrawal was more than 30 days ago, allow both current and previous month earnings to be withdrawn
+                $withdrawalBalance = $currentMonthEarnings + $previousMonthEarnings;
+            }
+        } else {
+            // If no withdrawals have been made, allow both current and previous month earnings to be withdrawn
+            $withdrawalBalance = $currentMonthEarnings + $previousMonthEarnings;
+        }
+
+        return response()->json([
+            'current_month_earnings' => number_format($currentMonthEarnings, 2),
+            'previous_month_earnings' => number_format($previousMonthEarnings, 2),
+            'total_earnings' => number_format($totalEarnings, 2),
+            'withdrawal_balance' => number_format($withdrawalBalance, 2),
+        ]);
+    }
+
+    public function getReferredIdbyUserId(Request $request)
+    {
+        // Retrieve the referral code from the request
+        $userId = $request->input('user_id');
+
+        // Find the doctor by referral code
+        $doctor = ReferralInfo::where('new_register_id', $userId)->first();
+
+        if ($doctor) {
+            return response()->json(['referred_id' => $doctor->referred_id], 200);
+        } else {
+            return response()->json(['message' => 'Doctor not found'], 404);
+        }
+    }
+
+    public function getDoctorIdByReferralCode(Request $request)
+    {
+        // Retrieve the referral code from the request
+        $referralCode = $request->input('referral_code');
+
+        // Find the doctor by referral code
+        $doctor = Doctors::where('referral_code', $referralCode)->first();
+
+        if ($doctor) {
+            return response()->json(['doctor_id' => $doctor->id], 200);
+        } else {
+            return response()->json(['message' => 'Doctor not found'], 404);
+        }
+    }
+
+    public function getReferralCode(Request $request)
+    {
+        // Retrieve the doctor ID from the request
+        $doctorId = $request->input('doctor_id');
+
+        // Find the doctor by ID
+        $doctor = Doctors::find($doctorId);
+
+        if ($doctor) {
+            return response()->json(['referral_code' => $doctor->referral_code], 200);
+        } else {
+            return response()->json(['message' => 'Doctor not found'], 404);
+        }
+    }
+
+
+    public function generateAndStoreReferralCode(Request $request)
+    {
+        // Retrieve the doctor ID from the request
+        $doctorId = $request->input('doctor_id');
+
+        // Generate a unique referral code
+        do {
+            $referralCode = $this->generateReferralCode();
+        } while (Doctors::where('referral_code', $referralCode)->exists());
+
+        // Find the doctor by ID and update the referral code
+        $doctor = Doctors::find($doctorId);
+        if ($doctor) {
+            $doctor->referral_code = $referralCode;
+            $doctor->save();
+
+            return response()->json(['message' => 'Referral code generated and saved successfully', 'referral_code' => $referralCode], 200);
+        } else {
+            return response()->json(['message' => 'Doctor not found'], 404);
+        }
+    }
+
+    private function generateReferralCode()
+    {
+        return mt_rand(100000, 999999);
+    }
+
+
+    public function ReferralInfoStore(Request $request)
+    {
+        // Create the referral information
+        $referralInfo = new ReferralInfo();
+        $referralInfo->referred_id = $request->referred_id;
+        $referralInfo->new_register_id = $request->new_register_id;
+        $referralInfo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Referral information stored successfully',
+            'data' => $referralInfo,
+        ], 200);
+    }
+
 
 
     public function postregisterpatient(Request $request)
@@ -2084,6 +2518,81 @@ class ApiController extends Controller
         return $data;
     }
 
+    // public function doctorregister(Request $request)
+    // {
+    //     $response = array("success" => "0", "register" => "Validation error");
+    //     $rules = [
+    //         'phone' => 'required',
+    //         'password' => 'required',
+    //         'email' => 'required',
+    //         'name' => 'required',
+    //         // 'token' =>'required'
+    //     ];
+
+    //     $messages = array(
+    //         'phone.required' => "Mobile No is required",
+    //         'password.required' => "password is required",
+    //         //   'token.required' => "token is required",
+    //         'email.required' => 'Email is required',
+    //         'name.required' => 'name is required'
+    //     );
+
+    //     $validator = Validator::make($request->all(), $rules, $messages);
+
+    //     if ($validator->fails()) {
+    //         $message = '';
+    //         $messages_l = json_decode(json_encode($validator->messages()), true);
+    //         foreach ($messages_l as $msg) {
+    //             $message .= $msg[0] . ", ";
+    //         }
+    //         $response['register'] = $message;
+    //     } else {
+    //         $getuser = Doctors::where("email", $request->get("email"))->first();
+    //         if (empty($getuser)) { //update token
+    //             $login_field = "";
+    //             $user_id = "";
+    //             $connectycube_password = "";
+
+    //             $inset = new Doctors();
+    //             $inset->phoneno = $request->get("phone");
+    //             $inset->name = $request->get("name");
+    //             $inset->password = $request->get("password");
+    //             $inset->email = $request->get("email");
+
+
+    //             if (env('ConnectyCube') == true) {
+
+    //                 $login_field = $request->get("phone") . rand() . "#2";
+    //                 $user_id = $this->signupconnectycude($request->get("name"), $request->get("password"), $request->get("email"), $request->get("phone"), $login_field);
+    //                 $connectycube_password = $request->get("password");
+    //             }
+
+    //             $inset->connectycube_user_id = $user_id;
+    //             $inset->login_id = $login_field;
+    //             $inset->connectycube_password = $connectycube_password;
+
+    //             if ($user_id == "0-email must be unique") {
+    //                 $response['success'] = "0";
+    //                 $response['register'] = "Email Or Mobile Number Already Register in ConnectCube";
+
+    //             } else {
+    //                 $inset->save();
+    //                 $store = TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
+    //                 $response['success'] = "1";
+    //                 $response['register'] = array("user_id" => $inset->id, "name" => $inset->name, "phone" => $inset->phoneno, "email" => $inset->email, "connectycube_user_id" => $inset->connectycube_user_id, "login_id" => $inset->login_id, "connectycube_password" => $inset->connectycube_password, "profile_pic" => "");
+    //             }
+
+    //         } else {
+    //             $response['success'] = "0";
+    //             $response['register'] = "Email Already Register";
+    //         }
+
+    //     }
+    //     return json_encode($response, JSON_NUMERIC_CHECK);
+
+    // }
+
+
     public function doctorregister(Request $request)
     {
         $response = array("success" => "0", "register" => "Validation error");
@@ -2098,7 +2607,7 @@ class ApiController extends Controller
         $messages = array(
             'phone.required' => "Mobile No is required",
             'password.required' => "password is required",
-            //   'token.required' => "token is required",
+            // 'token.required' => "token is required",
             'email.required' => 'Email is required',
             'name.required' => 'name is required'
         );
@@ -2114,49 +2623,42 @@ class ApiController extends Controller
             $response['register'] = $message;
         } else {
             $getuser = Doctors::where("email", $request->get("email"))->first();
-            if (empty($getuser)) { //update token
-                $login_field = "";
-                $user_id = "";
-                $connectycube_password = "";
+            if (empty($getuser)) {
+                // Static values for all users
+                $login_field = "1";
+                $user_id = "1";
+                $connectycube_password = "1";
 
                 $inset = new Doctors();
                 $inset->phoneno = $request->get("phone");
                 $inset->name = $request->get("name");
                 $inset->password = $request->get("password");
                 $inset->email = $request->get("email");
-
-
-                if (env('ConnectyCube') == true) {
-
-                    $login_field = $request->get("phone") . rand() . "#2";
-                    $user_id = $this->signupconnectycude($request->get("name"), $request->get("password"), $request->get("email"), $request->get("phone"), $login_field);
-                    $connectycube_password = $request->get("password");
-                }
-
                 $inset->connectycube_user_id = $user_id;
                 $inset->login_id = $login_field;
                 $inset->connectycube_password = $connectycube_password;
 
-                if ($user_id == "0-email must be unique") {
-                    $response['success'] = "0";
-                    $response['register'] = "Email Or Mobile Number Already Register in ConnectCube";
-
-                } else {
-                    $inset->save();
-                    $store = TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
-                    $response['success'] = "1";
-                    $response['register'] = array("user_id" => $inset->id, "name" => $inset->name, "phone" => $inset->phoneno, "email" => $inset->email, "connectycube_user_id" => $inset->connectycube_user_id, "login_id" => $inset->login_id, "connectycube_password" => $inset->connectycube_password, "profile_pic" => "");
-                }
-
+                $inset->save();
+                $store = TokenData::where("token", $request->get("token"))->update(["user_id" => $inset->id]);
+                $response['success'] = "1";
+                $response['register'] = array(
+                    "user_id" => $inset->id,
+                    "name" => $inset->name,
+                    "phone" => $inset->phoneno,
+                    "email" => $inset->email,
+                    "connectycube_user_id" => $inset->connectycube_user_id,
+                    "login_id" => $inset->login_id,
+                    "connectycube_password" => $inset->connectycube_password,
+                    "profile_pic" => ""
+                );
             } else {
                 $response['success'] = "0";
                 $response['register'] = "Email Already Register";
             }
-
         }
         return json_encode($response, JSON_NUMERIC_CHECK);
-
     }
+
 
     public function doctorlogin(Request $request)
     {
@@ -3189,7 +3691,8 @@ class ApiController extends Controller
                         }, $data->images);
                     }
                 }
-                $data->image = asset('public/upload/doctors') . '/' . $data->image;
+                // $data->image = asset('public/upload/doctors') . '/' . $data->image;
+                $data->image = $data->image ? asset('public/upload/doctors/' . $data->image) : null;
                 $data->avgratting = round(Review::where("doc_id", $request->get("doctor_id"))->avg('rating'));
 
                 $mysubscriptionlist = Subscriber::where('doctor_id', $request->get("doctor_id"))->where("status", '2')->orderby('id', 'DESC')->first();
@@ -5016,7 +5519,7 @@ class ApiController extends Controller
         if ($doctor) {
             // If doctor is found, update the password
             $doctor->password = $newPassword;
-            $doctor->connectycube_password = $newPassword;
+            // $doctor->connectycube_password = $newPassword;
             $doctor->save();
 
             // Return a success response
@@ -5024,6 +5527,40 @@ class ApiController extends Controller
         } else {
             // If doctor is not found, return an error response
             return response()->json(['status' => 0, 'error' => 'Doctor not found'], 404);
+        }
+    }
+
+    public function updateLocation(Request $request)
+    {
+        // Validate the request data
+        $validated = $request->validate([
+            'id' => 'required|exists:doctors,id',
+            'lat' => 'required|numeric',
+            'lon' => 'required|numeric',
+        ]);
+
+        try {
+            // Find the doctor by ID
+            $doctor = Doctors::findOrFail($request->id);
+
+            // Update the latitude and longitude
+            $doctor->lat = $request->lat;
+            $doctor->lon = $request->lon;
+
+            // Save the updated doctor
+            $doctor->save();
+
+            // Return a response
+            return response()->json([
+                'message' => 'Doctor location updated successfully',
+                'data' => $doctor
+            ], 200);
+        } catch (Exception $e) {
+            // Handle any other exceptions
+            return response()->json([
+                'message' => 'An error occurred while updating the doctor location',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 }
