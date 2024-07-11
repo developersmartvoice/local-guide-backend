@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Models\MembershipDetail;
+use App\Observers\MembershipDetailObserver;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -24,5 +26,6 @@ class AppServiceProvider extends ServiceProvider
     public function boot()
     {
         //
+        MembershipDetail::observe(MembershipDetailObserver::class);
     }
 }
