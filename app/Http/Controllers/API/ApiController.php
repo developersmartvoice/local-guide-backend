@@ -1681,16 +1681,67 @@ class ApiController extends Controller
             try {
                 $doctorId = $request->get('id');
 
-                // Delete related records in membership_details
-                DB::table('membership_details')->where('guide_id', $doctorId)->delete();
-
-                // Delete related records in order_id_info
-                DB::table('order_id_info')->where('guide_id', $doctorId)->delete();
-
-                // Now delete the doctor
+                // Find the doctor record
                 $doctor = Doctors::find($doctorId);
                 if ($doctor) {
+                    // Insert into deleted_doctors table
+                    DB::table('deleted_doctors')->insert([
+                        'id' => $doctor->id,
+                        'name' => $doctor->name,
+                        'email' => $doctor->email,
+                        'aboutus' => $doctor->aboutus,
+                        'working_time' => $doctor->working_time,
+                        'address' => $doctor->address,
+                        'lat' => $doctor->lat,
+                        'lon' => $doctor->lon,
+                        'phoneno' => $doctor->phoneno,
+                        'services' => $doctor->services,
+                        'languages' => $doctor->languages,
+                        'image' => $doctor->image,
+                        'images' => $doctor->images,
+                        'department_id' => $doctor->department_id,
+                        'password' => $doctor->password,
+                        'facebook_url' => $doctor->facebook_url,
+                        'twitter_url' => $doctor->twitter_url,
+                        'created_at' => $doctor->created_at,
+                        'updated_at' => $doctor->updated_at,
+                        'is_approve' => $doctor->is_approve,
+                        'consultation_fees' => $doctor->consultation_fees,
+                        'login_id' => $doctor->login_id,
+                        'connectycube_user_id' => $doctor->connectycube_user_id,
+                        'connectycube_password' => $doctor->connectycube_password,
+                        'unique_id' => $doctor->unique_id,
+                        'gender' => $doctor->gender,
+                        'title' => $doctor->title,
+                        'institution_name' => $doctor->institution_name,
+                        'birth_name' => $doctor->birth_name,
+                        'spouse_name' => $doctor->spouse_name,
+                        'state' => $doctor->state,
+                        'city' => $doctor->city,
+                        'motto' => $doctor->motto,
+                        'I_will_show_you' => $doctor->I_will_show_you,
+                        'currency' => $doctor->currency,
+                        'is_member' => $doctor->is_member,
+                        'referral_code' => $doctor->referral_code,
+                        'deletion_date' => now()
+                    ]);
+
+                    // Delete related records in other tables
+                    DB::table('direct_booking')->where('sender_id', $doctorId)->delete();
+                    DB::table('direct_booking')->where('recipient_id', $doctorId)->delete();
+                    DB::table('membership_details')->where('guide_id', $doctorId)->delete();
+                    DB::table('order_id_info')->where('guide_id', $doctorId)->delete();
+                    DB::table('referral_info')->where('referred_id', $doctorId)->delete();
+                    DB::table('referred_user_earnings')->where('referred_id', $doctorId)->delete();
+                    DB::table('referred_user_earnings')->where('new_id', $doctorId)->update(['new_id' => null]);
+                    // DB::table('referred_user_earnings')->where('new_id', $doctorId)->delete();
+                    DB::table('send_offer')->where('sender_id', $doctorId)->delete();
+                    DB::table('send_offer')->where('recipient_id', $doctorId)->delete();
+                    DB::table('trip_guides')->where('guide_id', $doctorId)->delete();
+
+                    // Delete the doctor from the doctors table
                     $doctor->delete();
+
                     DB::commit();
                     $response = ["success" => "1", "delete" => "User deleted successfully"];
                 } else {
@@ -1705,6 +1756,8 @@ class ApiController extends Controller
 
         return response()->json($response);
     }
+
+
 
 
     public function storeOrderId(Request $request)
@@ -2096,6 +2149,11 @@ class ApiController extends Controller
             ->latest('created_at')
             ->first();
 
+        $withdrawalBalance = 0;
+        $withdrawalAllowed = true;
+        $withdrawalMessage = 'Withdrawal is allowed.';
+        $nextWithdrawalDate = null;
+
         // Calculate withdrawal balance
         if ($lastWithdrawal) {
             $lastWithdrawalDate = new DateTime($lastWithdrawal->created_at);
@@ -2105,6 +2163,9 @@ class ApiController extends Controller
             if ($interval->days < 30) {
                 // If the last withdrawal was within the last 30 days, only allow current month earnings to be withdrawn
                 $withdrawalBalance = $currentMonthEarnings;
+                $withdrawalAllowed = false;
+                $withdrawalMessage = 'Withdrawal cannot be done within 30 days of the last withdrawal.';
+                $nextWithdrawalDate = $lastWithdrawalDate->add(new DateInterval('P30D'))->format('Y-m-d');
             } else {
                 // If the last withdrawal was more than 30 days ago, allow both current and previous month earnings to be withdrawn
                 $withdrawalBalance = $currentMonthEarnings + $previousMonthEarnings;
@@ -2114,13 +2175,26 @@ class ApiController extends Controller
             $withdrawalBalance = $currentMonthEarnings + $previousMonthEarnings;
         }
 
+        // Check if the withdrawal balance is zero or less than 500
+        if ($withdrawalBalance == 0) {
+            $withdrawalAllowed = false;
+            $withdrawalMessage = 'Withdrawal balance is zero.';
+        } elseif ($withdrawalBalance < 500) {
+            $withdrawalAllowed = false;
+            $withdrawalMessage = 'Withdrawal balance is less than 500.';
+        }
+
         return response()->json([
             'current_month_earnings' => number_format($currentMonthEarnings, 2),
             'previous_month_earnings' => number_format($previousMonthEarnings, 2),
             'total_earnings' => number_format($totalEarnings, 2),
             'withdrawal_balance' => number_format($withdrawalBalance, 2),
+            'withdrawal_allowed' => $withdrawalAllowed,
+            'withdrawal_message' => $withdrawalMessage,
+            'next_withdrawal_date' => $nextWithdrawalDate,
         ]);
     }
+
 
     public function getReferredIdbyUserId(Request $request)
     {
